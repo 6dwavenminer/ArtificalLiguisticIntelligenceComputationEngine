@@ -139,7 +139,7 @@ __global__ void CoreAIKernel(
 	unsigned int InputDataElementSize = 0;
 	unsigned int InputDataStartArrayID = 0;
 
-
+	//if (UnqiueTheadID < 2210) {
 	if (UnqiueTheadID < NeuralNetworkSetup[1]) {
 		InputNodeID = NeuralNetworkSetup[4 + (UnqiueTheadID * 3)];
 		InputIncrementElementEveryXNumOfCylce = NeuralNetworkSetup[5 + (UnqiueTheadID * 3)];
@@ -147,18 +147,11 @@ __global__ void CoreAIKernel(
 		//InputDataStartArrayID = NeuralNetworkSetup[3];
 		//for (unsigned int i = 1; i < UnqiueTheadID; i++) {
 		for (unsigned int i = 0; i < UnqiueTheadID; i++) {
-	//		unsigned int i = 2210;
 			InputDataStartArrayID += NeuralNetworkSetup[3 + (i * 3)];
 		}
-		//0
-		//2205
-		//2206
-		//2207
-		//2208 
-		//2209
-		//2210p[
+
 	}
-	
+	//OutputData[0] = 0;
 	//Map outputs to output nodes
 	unsigned int OutputNodeID = 0;
 	unsigned int OutputIncrementElementEveryXNumOfCylce = 0;
@@ -179,14 +172,11 @@ __global__ void CoreAIKernel(
 		//Copy input data to inputNodes
 		if (UnqiueTheadID < NeuralNetworkSetup[1]) {
 			if (InputIncrementElementEveryXNumOfCylce == 0) {
-				BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID];//FIX THIS!
-			//	BufferNodeValues[InputNodeID] = 0;
+				BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID];
 			}else if (InputDataElementSize < i / InputIncrementElementEveryXNumOfCylce) {
-	//			BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID + (i / InputIncrementElementEveryXNumOfCylce)];
-			//	BufferNodeValues[InputNodeID] = 0;
+				BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID + (i / InputIncrementElementEveryXNumOfCylce)];
 			}else {
-			//	BufferNodeValues[InputNodeID] = 0;
-	//			BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID + InputDataElementSize];
+				BufferNodeValues[InputNodeID] = InputData[InputDataStartArrayID + InputDataElementSize];
 			}
 		}
 		__syncthreads();
@@ -228,11 +218,12 @@ __global__ void CoreAIKernel(
 
 			NeuronOutputNodeBuffer[UnqiueTheadID] = NodeBufferValue;
 		}
-		/*
+		
 		__syncthreads();
 		if (UnqiueTheadID < NumOfNeurons) {			//Transfer the value buffers
 			BufferNodeValues[NeuronOutputNodeIDsBuffer[UnqiueTheadID]] = NeuronOutputNodeBuffer[UnqiueTheadID];
 		}
+
 		AIScoringFunction(
 			UnqiueTheadID,
 			NumOfNeurons,
@@ -241,6 +232,7 @@ __global__ void CoreAIKernel(
 			NetworkScore[0]
 		);
 		__syncthreads();
+		
 		//Copy outputNodes data to outputs
 		if (UnqiueTheadID < NeuralNetworkSetup[2]) {
 			if (OutputIncrementElementEveryXNumOfCylce == 0) {
@@ -252,7 +244,7 @@ __global__ void CoreAIKernel(
 			}
 		}
 		__syncthreads();
-		*/
+		
 	}
 	//
 	NetworkScore[0] *= 0.0001; //Divide score by 10000 to prevent score becoming too large in Core AI thread
@@ -312,6 +304,7 @@ cudaError_t RunAICoreOnGPU(
 	dev_NumOfScoringVariables = NumOfScoringVariables;
 	dev_NeuralNetworkSetupSize = NeuralNetworkSetupSize;
 	dev_InputDataSize = InputDataSize;
+	dev_OutputDataSize = OutputDataSize;
 
 
 
@@ -332,6 +325,7 @@ cudaError_t RunAICoreOnGPU(
 		fprintf(stderr, "cudaMalloc failed! dev_InputData");
 		goto Error;
 	}
+
 	cudaStatus = cudaMalloc((void**)&dev_OutputData, dev_OutputDataSize * sizeof(float));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaMalloc failed! dev_OutputData");
