@@ -97,9 +97,7 @@ int AudioIOThread(
 
 			if ((*AudioInputBufferToSpeakerThread).size() == FRAMES_PER_BUFFER) {
 				AudioBufferToSpeaker.resize(FRAMES_PER_BUFFER);
-				//AudioBufferToSpeaker.resize((*AudioInputBufferToSpeakerThread).size());
 				copy((*AudioInputBufferToSpeakerThread).begin(), (*AudioInputBufferToSpeakerThread).begin() + FRAMES_PER_BUFFER, AudioBufferToSpeaker.begin());
-				//copy((*AudioInputBufferToSpeakerThread).begin(), (*AudioInputBufferToSpeakerThread).end(), AudioBufferToSpeaker.begin());
 			}
 			AudioIOToggledUpdateToSpeakerFlag ^= 1;
 

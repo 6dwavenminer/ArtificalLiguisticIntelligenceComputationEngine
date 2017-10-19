@@ -5,6 +5,19 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ArtificalLiguisticIntelligenceComputationEngine", "ArtificalLiguisticIntelligenceComputationEngine\ArtificalLiguisticIntelligenceComputationEngine.vcxproj", "{31047E2F-676B-4138-8A32-C145FB986D9A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OLD", "OLD", "{1B56F237-D27E-405B-8E8D-34822642A629}"
+	ProjectSection(SolutionItems) = preProject
+		ArtificalLiguisticIntelligenceComputationEngine\ALICECore.cu = ArtificalLiguisticIntelligenceComputationEngine\ALICECore.cu
+		ArtificalLiguisticIntelligenceComputationEngine\ALICECore.cuh = ArtificalLiguisticIntelligenceComputationEngine\ALICECore.cuh
+		ArtificalLiguisticIntelligenceComputationEngine\AudioIO.cpp = ArtificalLiguisticIntelligenceComputationEngine\AudioIO.cpp
+		ArtificalLiguisticIntelligenceComputationEngine\AudioIO.h = ArtificalLiguisticIntelligenceComputationEngine\AudioIO.h
+		ArtificalLiguisticIntelligenceComputationEngine\LoadSaveNeuralNetwork.cpp = ArtificalLiguisticIntelligenceComputationEngine\LoadSaveNeuralNetwork.cpp
+		ArtificalLiguisticIntelligenceComputationEngine\LoadSaveNeuralNetwork.h = ArtificalLiguisticIntelligenceComputationEngine\LoadSaveNeuralNetwork.h
+		ArtificalLiguisticIntelligenceComputationEngine\Main.cpp = ArtificalLiguisticIntelligenceComputationEngine\Main.cpp
+		ArtificalLiguisticIntelligenceComputationEngine\NeuralNetworkModuleIntergrationAndSeperation.cpp = ArtificalLiguisticIntelligenceComputationEngine\NeuralNetworkModuleIntergrationAndSeperation.cpp
+		ArtificalLiguisticIntelligenceComputationEngine\NeuralNetworkModuleIntergrationAndSeperation.h = ArtificalLiguisticIntelligenceComputationEngine\NeuralNetworkModuleIntergrationAndSeperation.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

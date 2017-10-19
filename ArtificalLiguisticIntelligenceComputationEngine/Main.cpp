@@ -13,10 +13,20 @@ Last edited on: 26/07/2017
 #include "LoadSaveNeuralNetwork.h"
 #include <atomic>
 #include <algorithm>
+
 #include <iostream>
+#include <iomanip> 
+#include <conio.h>
+#include <consoleapi.h>
+#undef max
+
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <fstream>
+
 #include <iterator>
 #include <vector>
-#include <fstream>
 #include <limits>
 
 #include <chrono>
@@ -25,7 +35,7 @@ Last edited on: 26/07/2017
 #include <utility>
 
 //#define FRAMES_PER_BUFFER (2205)
-#define TEST_RUNTIME_IN_SECONDS (120)
+#define TEST_RUNTIME_IN_SECONDS (40)
 
 using namespace std;
 using namespace std::chrono;
@@ -264,6 +274,7 @@ Selects and loads audio with associated scoring variables
 int SupervisorThread(
 	atomic<unsigned int> *RunProgram,
 	atomic<unsigned int> *ProgramStartup,
+	atomic<unsigned int> *PauseNeuralNetwork,
 	unsigned int TrainingMode,
 	atomic<unsigned int>& AudioIOToggledUpdateFromMicFlag,
 	vector<float>& AudioInputBufferFromMicThread,
@@ -292,14 +303,19 @@ int SupervisorThread(
 
 	while (*ProgramStartup == 1) {
 		//Wait for startup to finish
+		Sleep(1);
 	}
 	while ((*RunProgram == 1) && (TrainingMode == 0)) {
+		while ((*PauseNeuralNetwork == 1) && (*RunProgram == 1)) {
+			//Loop while paused
+			Sleep(100);
+		}
 		string FilePathString;
 		std::ostringstream FilePathOStringStream;
 		FilePathOStringStream.clear();
 		if (TrainingMode == 0) {
 			ScoringVariables.clear();
-			ScoringVariables.resize(11);
+			ScoringVariables.resize(24);
 			RandomValue = ((99 - MinValue) * rand() / RAND_MAX) + MinValue;
 			if (((RandomValue < 85) && (AdminPresent == true))||((RandomValue >= 85) && (AdminPresent == false))) {
 				IsAdmin = true;
@@ -312,6 +328,14 @@ int SupervisorThread(
 			}else {
 				OtherPersonPresent = false;
 			}
+			/*
+			ScoringVariables
+			[0]TrainingMode
+			[1]NumOfNodesToScore
+			[2 + (n * 2)]NodeIDsToScore
+			[3 + (n * 2)]ScoringVariables
+			*/
+
 			/*
 			0=Admiration(1-274)
 			1=Amazement(1-71)
@@ -371,164 +395,179 @@ int SupervisorThread(
 			9=Busy
 			10=Present
 			*/
+
+			ScoringVariables[0] = 0;
+			ScoringVariables[1] = 11;
+			ScoringVariables[2] = 23 + 21;
+			ScoringVariables[4] = 41 + 21;
+			ScoringVariables[6] = 59 + 21;
+			ScoringVariables[8] = 77 + 21;
+			ScoringVariables[10] = 95 + 21;
+			ScoringVariables[12] = 113 + 21;
+			ScoringVariables[14] = 131 + 21;
+			ScoringVariables[16] = 149 + 21;
+			ScoringVariables[18] = 167 + 21;
+			ScoringVariables[20] = 185 + 21;
+			ScoringVariables[22] = 203 + 21;
+
 			if (AdminPresent == true) {
 				if (IsAdmin == true) {
 					FilePathOStringStream << "Emotinal training module/Training data/From Admin/";
 					RandomValue = ((14 - MinValue) * rand() / RAND_MAX) + MinValue;
 					switch (RandomValue) {
 					case 0:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.5;
-						ScoringVariables[2] = -0.7;
 						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.6;
-						ScoringVariables[7] = 0;
+						ScoringVariables[5] = 0.5;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.6;
+						ScoringVariables[17] = 0;
 						RandomValue = ((274 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Admiration/" << RandomValue;
 						break;
 					case 1:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.35;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = 0.6;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.5;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = 0.1;
+						ScoringVariables[5] = 0.35;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = 0.6;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.5;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((71 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Amazement/" << RandomValue;
 						break;
 					case 2:
-						ScoringVariables[0] = 0.5;
-						ScoringVariables[1] = 0.1;
-						ScoringVariables[2] = -0.7;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.6;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.65;
-						ScoringVariables[7] = -0.1;
+						ScoringVariables[3] = 0.5;
+						ScoringVariables[5] = 0.1;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.6;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.65;
+						ScoringVariables[17] = -0.1;
 						RandomValue = ((261 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Ecstasy/" << RandomValue;
 						break;
 					case 3:
-						ScoringVariables[0] = -0.1;
-						ScoringVariables[1] = 0.2;
-						ScoringVariables[2] = -0.1;
 						ScoringVariables[3] = -0.1;
-						ScoringVariables[4] = 0.5;
-						ScoringVariables[5] = -0.1;
-						ScoringVariables[6] = 0;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[5] = 0.2;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.1;
+						ScoringVariables[11] = 0.5;
+						ScoringVariables[13] = -0.1;
+						ScoringVariables[15] = 0;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((185 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Grief/" << RandomValue;
 						break;
 					case 4:
-						ScoringVariables[0] = -0.2;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = 0.0;
-						ScoringVariables[3] = -0.6;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.5;
-						ScoringVariables[6] = 0.1;
-						ScoringVariables[7] = 0.2;
+						ScoringVariables[3] = -0.2;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = 0.0;
+						ScoringVariables[9] = -0.6;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.5;
+						ScoringVariables[15] = 0.1;
+						ScoringVariables[17] = 0.2;
 						RandomValue = ((290 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Loathing/" << RandomValue;
 						break;
 					case 5:
-						ScoringVariables[0] = 0.05;
-						ScoringVariables[1] = 0.0;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = -0.5;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = -0.3;
-						ScoringVariables[6] = -0.4;
-						ScoringVariables[7] = 0.1;
+						ScoringVariables[3] = 0.05;
+						ScoringVariables[5] = 0.0;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = -0.5;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = -0.3;
+						ScoringVariables[15] = -0.4;
+						ScoringVariables[17] = 0.1;
 						RandomValue = ((593 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Neutral/" << RandomValue;
 						break;
 					case 6:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = -0.2;
-						ScoringVariables[4] = 0;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = 0.5;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.2;
+						ScoringVariables[11] = 0;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = 0.5;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((136 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Rage/" << RandomValue;
 						break;
 					case 7:
-						ScoringVariables[0] = -0.6;
-						ScoringVariables[1] = -0.6;
-						ScoringVariables[2] = 0.5;
-						ScoringVariables[3] = 0.2;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.4;
+						ScoringVariables[3] = -0.6;
+						ScoringVariables[5] = -0.6;
+						ScoringVariables[7] = 0.5;
+						ScoringVariables[9] = 0.2;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.4;
 						RandomValue = ((6 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Terror/" << RandomValue;
 						break;
 					case 8:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.3;
-						ScoringVariables[2] = 0.2;
-						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = 0.0;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.3;
+						ScoringVariables[7] = 0.2;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = 0.0;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((25 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Vigilance/" << RandomValue;
 						break;
 					case 9:
-						ScoringVariables[0] = 0.9;
-						ScoringVariables[1] = 0.9;
-						ScoringVariables[2] = -0.9;
-						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.8;
-						ScoringVariables[5] = -0.9;
-						ScoringVariables[6] = -0.8;
-						ScoringVariables[7] = 0.0;
+						ScoringVariables[3] = 0.9;
+						ScoringVariables[5] = 0.9;
+						ScoringVariables[7] = -0.9;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.8;
+						ScoringVariables[13] = -0.9;
+						ScoringVariables[15] = -0.8;
+						ScoringVariables[17] = 0.0;
 						RandomValue = ((103 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "High admiration & esctasy/" << RandomValue;
 						break;
 					case 10:
-						ScoringVariables[0] = 0;
-						ScoringVariables[1] = 0.8;
-						ScoringVariables[2] = -0.6;
-						ScoringVariables[3] = -0.2;
-						ScoringVariables[4] = 0.9;
-						ScoringVariables[5] = -0.8;
-						ScoringVariables[6] = -0.7;
-						ScoringVariables[7] = -0.7;
+						ScoringVariables[3] = 0;
+						ScoringVariables[5] = 0.8;
+						ScoringVariables[7] = -0.6;
+						ScoringVariables[9] = -0.2;
+						ScoringVariables[11] = 0.9;
+						ScoringVariables[13] = -0.8;
+						ScoringVariables[15] = -0.7;
+						ScoringVariables[17] = -0.7;
 						RandomValue = ((290 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "High grief & admiration/" << RandomValue;
 						break;
 					case 11:
-						ScoringVariables[0] = -0.05;
-						ScoringVariables[1] = -0.1;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.3;
-						ScoringVariables[5] = 0.1;
-						ScoringVariables[6] = -0.2;
-						ScoringVariables[7] = 0.12;
+						ScoringVariables[3] = -0.05;
+						ScoringVariables[5] = -0.1;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.3;
+						ScoringVariables[13] = 0.1;
+						ScoringVariables[15] = -0.2;
+						ScoringVariables[17] = 0.12;
 						RandomValue = ((82 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Low grief & loathing & rage  & amazement/" << RandomValue;
 						break;
 					case 12:
-						ScoringVariables[0] = 0.15;
-						ScoringVariables[1] = 0.1;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.55;
-						ScoringVariables[5] = -0.4;
-						ScoringVariables[6] = -0.5;
-						ScoringVariables[7] = 0.12;
+						ScoringVariables[3] = 0.15;
+						ScoringVariables[5] = 0.1;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.55;
+						ScoringVariables[13] = -0.4;
+						ScoringVariables[15] = -0.5;
+						ScoringVariables[17] = 0.12;
 						RandomValue = ((86 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Low Vigilance & ecstasy & admiration & amazement/" << RandomValue;
 						break;
@@ -538,62 +577,62 @@ int SupervisorThread(
 						RandomValue = ((4 - MinValue) * rand() / RAND_MAX) + MinValue;
 						switch (RandomValue) {
 						case 0:
-							ScoringVariables[0] = 0.5;
-							ScoringVariables[1] = 0.1;
-							ScoringVariables[2] = -0.7;
-							ScoringVariables[3] = 0;
-							ScoringVariables[4] = -0.6;
-							ScoringVariables[5] = -0.7;
-							ScoringVariables[6] = -0.65;
-							ScoringVariables[7] = -0.1;
+							ScoringVariables[3] = 0.5;
+							ScoringVariables[5] = 0.1;
+							ScoringVariables[7] = -0.7;
+							ScoringVariables[9] = 0;
+							ScoringVariables[11] = -0.6;
+							ScoringVariables[13] = -0.7;
+							ScoringVariables[15] = -0.65;
+							ScoringVariables[17] = -0.1;
 							RandomValue = ((21 - 1) * rand() / RAND_MAX) + 1;
 							FilePathOStringStream << "Ecstasy/" << RandomValue;
 							break;
 						case 1:
-							ScoringVariables[0] = -0.1;
-							ScoringVariables[1] = 0.2;
-							ScoringVariables[2] = -0.1;
 							ScoringVariables[3] = -0.1;
-							ScoringVariables[4] = 0.5;
-							ScoringVariables[5] = -0.1;
-							ScoringVariables[6] = 0;
-							ScoringVariables[7] = -0.5;
+							ScoringVariables[5] = 0.2;
+							ScoringVariables[7] = -0.1;
+							ScoringVariables[9] = -0.1;
+							ScoringVariables[11] = 0.5;
+							ScoringVariables[13] = -0.1;
+							ScoringVariables[15] = 0;
+							ScoringVariables[17] = -0.5;
 							RandomValue = ((18 - 1) * rand() / RAND_MAX) + 1;
 							FilePathOStringStream << "Grief/" << RandomValue;
 							break;
 						case 2:
-							ScoringVariables[0] = -0.2;
-							ScoringVariables[1] = -0.5;
-							ScoringVariables[2] = 0;
-							ScoringVariables[3] = -0.6;
-							ScoringVariables[4] = -0.2;
-							ScoringVariables[5] = 0.5;
-							ScoringVariables[6] = 0.1;
-							ScoringVariables[7] = 0.2;
+							ScoringVariables[3] = -0.2;
+							ScoringVariables[5] = -0.5;
+							ScoringVariables[7] = 0;
+							ScoringVariables[9] = -0.6;
+							ScoringVariables[11] = -0.2;
+							ScoringVariables[13] = 0.5;
+							ScoringVariables[15] = 0.1;
+							ScoringVariables[17] = 0.2;
 							RandomValue = ((9 - 1) * rand() / RAND_MAX) + 1;
 							FilePathOStringStream << "Loathing/" << RandomValue;
 							break;
 						case 3:
-							ScoringVariables[0] = 0.05;
-							ScoringVariables[1] = 0;
-							ScoringVariables[2] = -0.5;
-							ScoringVariables[3] = -0.5;
-							ScoringVariables[4] = -0.5;
-							ScoringVariables[5] = -0.3;
-							ScoringVariables[6] = -0.4;
-							ScoringVariables[7] = 0.1;
+							ScoringVariables[3] = 0.05;
+							ScoringVariables[5] = 0;
+							ScoringVariables[7] = -0.5;
+							ScoringVariables[9] = -0.5;
+							ScoringVariables[11] = -0.5;
+							ScoringVariables[13] = -0.3;
+							ScoringVariables[15] = -0.4;
+							ScoringVariables[17] = 0.1;
 							RandomValue = ((37 - 1) * rand() / RAND_MAX) + 1;
 							FilePathOStringStream << "Neutral/" << RandomValue;
 							break;
 						case 4:
-							ScoringVariables[0] = -0.5;
-							ScoringVariables[1] = -0.3;
-							ScoringVariables[2] = 0.2;
-							ScoringVariables[3] = 0.1;
-							ScoringVariables[4] = -0.5;
-							ScoringVariables[5] = 0;
-							ScoringVariables[6] = -0.3;
-							ScoringVariables[7] = 0.5;
+							ScoringVariables[3] = -0.5;
+							ScoringVariables[5] = -0.3;
+							ScoringVariables[7] = 0.2;
+							ScoringVariables[9] = 0.1;
+							ScoringVariables[11] = -0.5;
+							ScoringVariables[13] = 0;
+							ScoringVariables[15] = -0.3;
+							ScoringVariables[17] = 0.5;
 							RandomValue = ((10 - 1) * rand() / RAND_MAX) + 1;
 							FilePathOStringStream << "Vigilance/" << RandomValue;
 							break;
@@ -606,86 +645,86 @@ int SupervisorThread(
 							RandomValue = ((6 - MinValue) * rand() / RAND_MAX) + MinValue;
 							switch (RandomValue) {
 							case 0:
-								ScoringVariables[0] = 0.5;
-								ScoringVariables[1] = 0.1;
-								ScoringVariables[2] = -0.7;
-								ScoringVariables[3] = 0;
-								ScoringVariables[4] = -0.6;
-								ScoringVariables[5] = -0.7;
-								ScoringVariables[6] = -0.65;
-								ScoringVariables[7] = -0.1;
+								ScoringVariables[3] = 0.5;
+								ScoringVariables[5] = 0.1;
+								ScoringVariables[7] = -0.7;
+								ScoringVariables[9] = 0;
+								ScoringVariables[11] = -0.6;
+								ScoringVariables[13] = -0.7;
+								ScoringVariables[15] = -0.65;
+								ScoringVariables[17] = -0.1;
 								RandomValue = ((19 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Ecstasy/" << RandomValue;
 								break;
 							case 1:
-								ScoringVariables[0] = -0.1;
-								ScoringVariables[1] = 0.2;
-								ScoringVariables[2] = -0.1;
 								ScoringVariables[3] = -0.1;
-								ScoringVariables[4] = 0.5;
-								ScoringVariables[5] = -0.1;
-								ScoringVariables[6] = 0;
-								ScoringVariables[7] = -0.5;
+								ScoringVariables[5] = 0.2;
+								ScoringVariables[7] = -0.1;
+								ScoringVariables[9] = -0.1;
+								ScoringVariables[11] = 0.5;
+								ScoringVariables[13] = -0.1;
+								ScoringVariables[15] = 0;
+								ScoringVariables[17] = -0.5;
 								RandomValue = ((18 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Grief/" << RandomValue;
 								break;
 							case 2:
-								ScoringVariables[0] = -0.2;
-								ScoringVariables[1] = -0.5;
-								ScoringVariables[2] = 0;
-								ScoringVariables[3] = -0.6;
-								ScoringVariables[4] = -0.2;
-								ScoringVariables[5] = 0.5;
-								ScoringVariables[6] = 0.1;
-								ScoringVariables[7] = 0.2;
+								ScoringVariables[3] = -0.2;
+								ScoringVariables[5] = -0.5;
+								ScoringVariables[7] = 0;
+								ScoringVariables[9] = -0.6;
+								ScoringVariables[11] = -0.2;
+								ScoringVariables[13] = 0.5;
+								ScoringVariables[15] = 0.1;
+								ScoringVariables[17] = 0.2;
 								RandomValue = ((29 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Loathing/" << RandomValue;
 								break;
 							case 3:
-								ScoringVariables[0] = 0.05;
-								ScoringVariables[1] = 0;
-								ScoringVariables[2] = -0.5;
-								ScoringVariables[3] = -0.5;
-								ScoringVariables[4] = -0.5;
-								ScoringVariables[5] = -0.3;
-								ScoringVariables[6] = -0.4;
-								ScoringVariables[7] = 0.1;
+								ScoringVariables[3] = 0.05;
+								ScoringVariables[5] = 0;
+								ScoringVariables[7] = -0.5;
+								ScoringVariables[9] = -0.5;
+								ScoringVariables[11] = -0.5;
+								ScoringVariables[13] = -0.3;
+								ScoringVariables[15] = -0.4;
+								ScoringVariables[17] = 0.1;
 								RandomValue = ((32 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Neutral/" << RandomValue;
 								break;
 							case 4:
-								ScoringVariables[0] = -0.5;
-								ScoringVariables[1] = -0.5;
-								ScoringVariables[2] = -0.1;
-								ScoringVariables[3] = -0.2;
-								ScoringVariables[4] = 0;
-								ScoringVariables[5] = 0.2;
-								ScoringVariables[6] = 0.5;
-								ScoringVariables[7] = -0.5;
+								ScoringVariables[3] = -0.5;
+								ScoringVariables[5] = -0.5;
+								ScoringVariables[7] = -0.1;
+								ScoringVariables[9] = -0.2;
+								ScoringVariables[11] = 0;
+								ScoringVariables[13] = 0.2;
+								ScoringVariables[15] = 0.5;
+								ScoringVariables[17] = -0.5;
 								RandomValue = ((25 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Rage/" << RandomValue;
 								break;
 							case 5:
-								ScoringVariables[0] = -0.6;
-								ScoringVariables[1] = -0.6;
-								ScoringVariables[2] = 0.5;
-								ScoringVariables[3] = 0.2;
-								ScoringVariables[4] = -0.2;
-								ScoringVariables[5] = 0.2;
-								ScoringVariables[6] = -0.3;
-								ScoringVariables[7] = 0.4;
+								ScoringVariables[3] = -0.6;
+								ScoringVariables[5] = -0.6;
+								ScoringVariables[7] = 0.5;
+								ScoringVariables[9] = 0.2;
+								ScoringVariables[11] = -0.2;
+								ScoringVariables[13] = 0.2;
+								ScoringVariables[15] = -0.3;
+								ScoringVariables[17] = 0.4;
 								RandomValue = ((29 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Terror/" << RandomValue;
 								break;
 							case 6:
-								ScoringVariables[0] = -0.5;
-								ScoringVariables[1] = -0.3;
-								ScoringVariables[2] = 0.2;
-								ScoringVariables[3] = 0.1;
-								ScoringVariables[4] = -0.5;
-								ScoringVariables[5] = 0;
-								ScoringVariables[6] = -0.3;
-								ScoringVariables[7] = 0.5;
+								ScoringVariables[3] = -0.5;
+								ScoringVariables[5] = -0.3;
+								ScoringVariables[7] = 0.2;
+								ScoringVariables[9] = 0.1;
+								ScoringVariables[11] = -0.5;
+								ScoringVariables[13] = 0;
+								ScoringVariables[15] = -0.3;
+								ScoringVariables[17] = 0.5;
 								RandomValue = ((22 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Vigilance/" << RandomValue;
 								break;
@@ -697,74 +736,74 @@ int SupervisorThread(
 							RandomValue = ((5 - MinValue) * rand() / RAND_MAX) + MinValue;
 							switch (RandomValue) {
 							case 0:
-								ScoringVariables[0] = 0.1;
-								ScoringVariables[1] = 0.5;
-								ScoringVariables[2] = -0.7;
 								ScoringVariables[3] = 0.1;
-								ScoringVariables[4] = -0.7;
-								ScoringVariables[5] = -0.7;
-								ScoringVariables[6] = -0.6;
-								ScoringVariables[7] = 0;
+								ScoringVariables[5] = 0.5;
+								ScoringVariables[7] = -0.7;
+								ScoringVariables[9] = 0.1;
+								ScoringVariables[11] = -0.7;
+								ScoringVariables[13] = -0.7;
+								ScoringVariables[15] = -0.6;
+								ScoringVariables[17] = 0;
 								RandomValue = ((20 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Admiration/" << RandomValue;
 								break;
 							case 1:
-								ScoringVariables[0] = 0.5;
-								ScoringVariables[1] = 0.1;
-								ScoringVariables[2] = -0.7;
-								ScoringVariables[3] = 0;
-								ScoringVariables[4] = -0.6;
-								ScoringVariables[5] = -0.7;
-								ScoringVariables[6] = -0.65;
-								ScoringVariables[7] = -0.1;
+								ScoringVariables[3] = 0.5;
+								ScoringVariables[5] = 0.1;
+								ScoringVariables[7] = -0.7;
+								ScoringVariables[9] = 0;
+								ScoringVariables[11] = -0.6;
+								ScoringVariables[13] = -0.7;
+								ScoringVariables[15] = -0.65;
+								ScoringVariables[17] = -0.1;
 								RandomValue = ((27 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Ecstasy/" << RandomValue;
 								break;
 							case 2:
-								ScoringVariables[0] = -0.1;
-								ScoringVariables[1] = 0.2;
-								ScoringVariables[2] = -0.1;
 								ScoringVariables[3] = -0.1;
-								ScoringVariables[4] = 0.5;
-								ScoringVariables[5] = -0.1;
-								ScoringVariables[6] = 0;
-								ScoringVariables[7] = -0.5;
+								ScoringVariables[5] = 0.2;
+								ScoringVariables[7] = -0.1;
+								ScoringVariables[9] = -0.1;
+								ScoringVariables[11] = 0.5;
+								ScoringVariables[13] = -0.1;
+								ScoringVariables[15] = 0;
+								ScoringVariables[17] = -0.5;
 								RandomValue = ((7 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Grief/" << RandomValue;
 								break;
 							case 3:
-								ScoringVariables[0] = -0.2;
-								ScoringVariables[1] = -0.5;
-								ScoringVariables[2] = 0;
-								ScoringVariables[3] = -0.6;
-								ScoringVariables[4] = -0.2;
-								ScoringVariables[5] = 0.5;
-								ScoringVariables[6] = 0.1;
-								ScoringVariables[7] = 0.2;
+								ScoringVariables[3] = -0.2;
+								ScoringVariables[5] = -0.5;
+								ScoringVariables[7] = 0;
+								ScoringVariables[9] = -0.6;
+								ScoringVariables[11] = -0.2;
+								ScoringVariables[13] = 0.5;
+								ScoringVariables[15] = 0.1;
+								ScoringVariables[17] = 0.2;
 								RandomValue = ((23 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Loathing/" << RandomValue;
 								break;
 							case 4:
-								ScoringVariables[0] = 0.05;
-								ScoringVariables[1] = 0;
-								ScoringVariables[2] = -0.5;
-								ScoringVariables[3] = -0.5;
-								ScoringVariables[4] = -0.5;
-								ScoringVariables[5] = -0.3;
-								ScoringVariables[6] = -0.4;
-								ScoringVariables[7] = 0.1;
+								ScoringVariables[3] = 0.05;
+								ScoringVariables[5] = 0;
+								ScoringVariables[7] = -0.5;
+								ScoringVariables[9] = -0.5;
+								ScoringVariables[11] = -0.5;
+								ScoringVariables[13] = -0.3;
+								ScoringVariables[15] = -0.4;
+								ScoringVariables[17] = 0.1;
 								RandomValue = ((35 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Neutral/" << RandomValue;
 								break;
 							case 5:
-								ScoringVariables[0] = -0.5;
-								ScoringVariables[1] = -0.5;
-								ScoringVariables[2] = -0.1;
-								ScoringVariables[3] = -0.2;
-								ScoringVariables[4] = 0;
-								ScoringVariables[5] = 0.2;
-								ScoringVariables[6] = 0.5;
-								ScoringVariables[7] = -0.5;
+								ScoringVariables[3] = -0.5;
+								ScoringVariables[5] = -0.5;
+								ScoringVariables[7] = -0.1;
+								ScoringVariables[9] = -0.2;
+								ScoringVariables[11] = 0;
+								ScoringVariables[13] = 0.2;
+								ScoringVariables[15] = 0.5;
+								ScoringVariables[17] = -0.5;
 								RandomValue = ((14 - 1) * rand() / RAND_MAX) + 1;
 								FilePathOStringStream << "Rage/" << RandomValue;
 								break;
@@ -778,110 +817,110 @@ int SupervisorThread(
 					RandomValue = ((8 - MinValue) * rand() / RAND_MAX) + MinValue;
 					switch (RandomValue) {
 					case 0:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.5;
-						ScoringVariables[2] = -0.7;
 						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.6;
-						ScoringVariables[7] = 0.0;
+						ScoringVariables[5] = 0.5;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.6;
+						ScoringVariables[17] = 0.0;
 						RandomValue = ((58 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Admiration/" << RandomValue;
 						break;
 					case 1:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.35;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = 0.6;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.5;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = 0.1;
+						ScoringVariables[5] = 0.35;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = 0.6;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.5;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((43 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Amazement/" << RandomValue;
 						break;
 					case 2:
-						ScoringVariables[0] = 0.5;
-						ScoringVariables[1] = 0.1;
-						ScoringVariables[2] = -0.7;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.6;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.65;
-						ScoringVariables[7] = -0.1;
+						ScoringVariables[3] = 0.5;
+						ScoringVariables[5] = 0.1;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.6;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.65;
+						ScoringVariables[17] = -0.1;
 						RandomValue = ((108 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Ecstasy/" << RandomValue;
 						break;
 					case 3:
-						ScoringVariables[0] = -0.1;
-						ScoringVariables[1] = 0.2;
-						ScoringVariables[2] = -0.1;
 						ScoringVariables[3] = -0.1;
-						ScoringVariables[4] = 0.5;
-						ScoringVariables[5] = -0.1;
-						ScoringVariables[6] = 0.0;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[5] = 0.2;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.1;
+						ScoringVariables[11] = 0.5;
+						ScoringVariables[13] = -0.1;
+						ScoringVariables[15] = 0.0;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((77 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Grief/" << RandomValue;
 						break;
 					case 4:
-						ScoringVariables[0] = -0.2;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = 0;
-						ScoringVariables[3] = -0.6;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.5;
-						ScoringVariables[6] = 0.1;
-						ScoringVariables[7] = 0.2;
+						ScoringVariables[3] = -0.2;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = 0;
+						ScoringVariables[9] = -0.6;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.5;
+						ScoringVariables[15] = 0.1;
+						ScoringVariables[17] = 0.2;
 						RandomValue = ((63 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Loathing/" << RandomValue;
 						break;
 					case 5:
-						ScoringVariables[0] = 0.05;
-						ScoringVariables[1] = 0.0;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = -0.5;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = -0.3;
-						ScoringVariables[6] = -0.4;
-						ScoringVariables[7] = 0.1;
+						ScoringVariables[3] = 0.05;
+						ScoringVariables[5] = 0.0;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = -0.5;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = -0.3;
+						ScoringVariables[15] = -0.4;
+						ScoringVariables[17] = 0.1;
 						RandomValue = ((102 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Neutral/" << RandomValue;
 						break;
 					case 6:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = -0.2;
-						ScoringVariables[4] = 0.0;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = 0.5;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.2;
+						ScoringVariables[11] = 0.0;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = 0.5;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((83 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Rage/" << RandomValue;
 						break;
 					case 7:
-						ScoringVariables[0] = -0.6;
-						ScoringVariables[1] = -0.6;
-						ScoringVariables[2] = 0.5;
-						ScoringVariables[3] = 0.2;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.4;
+						ScoringVariables[3] = -0.6;
+						ScoringVariables[5] = -0.6;
+						ScoringVariables[7] = 0.5;
+						ScoringVariables[9] = 0.2;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.4;
 						RandomValue = ((50 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Terror/" << RandomValue;
 						break;
 					case 8:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.3;
-						ScoringVariables[2] = 0.2;
-						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = 0.0;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.3;
+						ScoringVariables[7] = 0.2;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = 0.0;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((66 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Vigilance/" << RandomValue;
 						break;
@@ -894,74 +933,74 @@ int SupervisorThread(
 					RandomValue = ((5 - MinValue) * rand() / RAND_MAX) + MinValue;
 					switch (RandomValue) {
 					case 0:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.5;
-						ScoringVariables[2] = -0.7;
 						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.6;
-						ScoringVariables[7] = 0;
+						ScoringVariables[5] = 0.5;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.6;
+						ScoringVariables[17] = 0;
 						RandomValue = ((31 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Admiration/" << RandomValue;
 						break;
 					case 1:
-						ScoringVariables[0] = 0.5;
-						ScoringVariables[1] = 0.1;
-						ScoringVariables[2] = -0.7;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.6;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.65;
-						ScoringVariables[7] = -0.1;
+						ScoringVariables[3] = 0.5;
+						ScoringVariables[5] = 0.1;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.6;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.65;
+						ScoringVariables[17] = -0.1;
 						RandomValue = ((23 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Ecstasy/" << RandomValue;
 						break;
 					case 2:
-						ScoringVariables[0] = -0.1;
-						ScoringVariables[1] = 0.2;
-						ScoringVariables[2] = -0.1;
 						ScoringVariables[3] = -0.1;
-						ScoringVariables[4] = 0.5;
-						ScoringVariables[5] = -0.1;
-						ScoringVariables[6] = 0;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[5] = 0.2;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.1;
+						ScoringVariables[11] = 0.5;
+						ScoringVariables[13] = -0.1;
+						ScoringVariables[15] = 0;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((20 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Grief/" << RandomValue;
 						break;
 					case 3:
-						ScoringVariables[0] = -0.2;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = 0;
-						ScoringVariables[3] = -0.6;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.5;
-						ScoringVariables[6] = 0.1;
-						ScoringVariables[7] = 0.2;
+						ScoringVariables[3] = -0.2;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = 0;
+						ScoringVariables[9] = -0.6;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.5;
+						ScoringVariables[15] = 0.1;
+						ScoringVariables[17] = 0.2;
 						RandomValue = ((22 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Loathing/" << RandomValue;
 						break;
 					case 4:
-						ScoringVariables[0] = 0.05;
-						ScoringVariables[1] = 0;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = -0.5;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = -0.3;
-						ScoringVariables[6] = -0.4;
-						ScoringVariables[7] = 0.1;
+						ScoringVariables[3] = 0.05;
+						ScoringVariables[5] = 0;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = -0.5;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = -0.3;
+						ScoringVariables[15] = -0.4;
+						ScoringVariables[17] = 0.1;
 						RandomValue = ((31 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Neutral/" << RandomValue;
 						break;
 					case 5:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = -0.2;
-						ScoringVariables[4] = 0;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = 0.5;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.2;
+						ScoringVariables[11] = 0;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = 0.5;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((6 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Rage/" << RandomValue;
 						break;
@@ -972,110 +1011,110 @@ int SupervisorThread(
 					RandomValue = ((8 - MinValue) * rand() / RAND_MAX) + MinValue;
 					switch (RandomValue) {
 					case 0:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.5;
-						ScoringVariables[2] = -0.7;
 						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.6;
-						ScoringVariables[7] = 0;
+						ScoringVariables[5] = 0.5;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.6;
+						ScoringVariables[17] = 0;
 						RandomValue = ((58 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Admiration/" << RandomValue;
 						break;
 					case 1:
-						ScoringVariables[0] = 0.1;
-						ScoringVariables[1] = 0.35;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = 0.6;
-						ScoringVariables[4] = -0.7;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.5;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = 0.1;
+						ScoringVariables[5] = 0.35;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = 0.6;
+						ScoringVariables[11] = -0.7;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.5;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((43 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Amazement/" << RandomValue;
 						break;
 					case 2:
-						ScoringVariables[0] = 0.5;
-						ScoringVariables[1] = 0.1;
-						ScoringVariables[2] = -0.7;
-						ScoringVariables[3] = 0;
-						ScoringVariables[4] = -0.6;
-						ScoringVariables[5] = -0.7;
-						ScoringVariables[6] = -0.65;
-						ScoringVariables[7] = -0.1;
+						ScoringVariables[3] = 0.5;
+						ScoringVariables[5] = 0.1;
+						ScoringVariables[7] = -0.7;
+						ScoringVariables[9] = 0;
+						ScoringVariables[11] = -0.6;
+						ScoringVariables[13] = -0.7;
+						ScoringVariables[15] = -0.65;
+						ScoringVariables[17] = -0.1;
 						RandomValue = ((108 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Ecstasy/" << RandomValue;
 						break;
 					case 3:
-						ScoringVariables[0] = -0.1;
-						ScoringVariables[1] = 0.2;
-						ScoringVariables[2] = -0.1;
 						ScoringVariables[3] = -0.1;
-						ScoringVariables[4] = 0.5;
-						ScoringVariables[5] = -0.1;
-						ScoringVariables[6] = 0;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[5] = 0.2;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.1;
+						ScoringVariables[11] = 0.5;
+						ScoringVariables[13] = -0.1;
+						ScoringVariables[15] = 0;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((77 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Grief/" << RandomValue;
 						break;
 					case 4:
-						ScoringVariables[0] = -0.2;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = 0;
-						ScoringVariables[3] = -0.6;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.5;
-						ScoringVariables[6] = 0.1;
-						ScoringVariables[7] = 0.2;
+						ScoringVariables[3] = -0.2;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = 0;
+						ScoringVariables[9] = -0.6;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.5;
+						ScoringVariables[15] = 0.1;
+						ScoringVariables[17] = 0.2;
 						RandomValue = ((63 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Loathing/" << RandomValue;
 						break;
 					case 5:
-						ScoringVariables[0] = 0.05;
-						ScoringVariables[1] = 0;
-						ScoringVariables[2] = -0.5;
-						ScoringVariables[3] = -0.5;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = -0.3;
-						ScoringVariables[6] = -0.4;
-						ScoringVariables[7] = 0.1;
+						ScoringVariables[3] = 0.05;
+						ScoringVariables[5] = 0;
+						ScoringVariables[7] = -0.5;
+						ScoringVariables[9] = -0.5;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = -0.3;
+						ScoringVariables[15] = -0.4;
+						ScoringVariables[17] = 0.1;
 						RandomValue = ((102 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Neutral/" << RandomValue;
 						break;
 					case 6:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.5;
-						ScoringVariables[2] = -0.1;
-						ScoringVariables[3] = -0.2;
-						ScoringVariables[4] = 0;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = 0.5;
-						ScoringVariables[7] = -0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.5;
+						ScoringVariables[7] = -0.1;
+						ScoringVariables[9] = -0.2;
+						ScoringVariables[11] = 0;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = 0.5;
+						ScoringVariables[17] = -0.5;
 						RandomValue = ((83 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Rage/" << RandomValue;
 						break;
 					case 7:
-						ScoringVariables[0] = -0.6;
-						ScoringVariables[1] = -0.6;
-						ScoringVariables[2] = 0.5;
-						ScoringVariables[3] = 0.2;
-						ScoringVariables[4] = -0.2;
-						ScoringVariables[5] = 0.2;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.4;
+						ScoringVariables[3] = -0.6;
+						ScoringVariables[5] = -0.6;
+						ScoringVariables[7] = 0.5;
+						ScoringVariables[9] = 0.2;
+						ScoringVariables[11] = -0.2;
+						ScoringVariables[13] = 0.2;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.4;
 						RandomValue = ((50 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Terror/" << RandomValue;
 						break;
 					case 8:
-						ScoringVariables[0] = -0.5;
-						ScoringVariables[1] = -0.3;
-						ScoringVariables[2] = 0.2;
-						ScoringVariables[3] = 0.1;
-						ScoringVariables[4] = -0.5;
-						ScoringVariables[5] = 0;
-						ScoringVariables[6] = -0.3;
-						ScoringVariables[7] = 0.5;
+						ScoringVariables[3] = -0.5;
+						ScoringVariables[5] = -0.3;
+						ScoringVariables[7] = 0.2;
+						ScoringVariables[9] = 0.1;
+						ScoringVariables[11] = -0.5;
+						ScoringVariables[13] = 0;
+						ScoringVariables[15] = -0.3;
+						ScoringVariables[17] = 0.5;
 						RandomValue = ((66 - 1) * rand() / RAND_MAX) + 1;
 						FilePathOStringStream << "Vigilance/" << RandomValue;
 						break;
@@ -1085,21 +1124,21 @@ int SupervisorThread(
 		}
 		//Is admin
 		if ((IsAdmin == true) || (OtherPersonPresent == false)) {
-			ScoringVariables[8] = 1;
+			ScoringVariables[19] = 1;
 		}else {
-			ScoringVariables[8] = -1;
+			ScoringVariables[19] = -1;
 		}
 		//Admin busy
 		if (AdminBusy == true) {
-			ScoringVariables[9] = 1;
+			ScoringVariables[21] = 1;
 		}else {
-			ScoringVariables[9] = -1;
+			ScoringVariables[21] = -1;
 		}
 		//Person present
 		if ((AdminPresent == true) || (OtherPersonPresent == true)) {
-			ScoringVariables[10] = 1;
+			ScoringVariables[23] = 1;
 		}else {
-			ScoringVariables[10] = -1;
+			ScoringVariables[23] = -1;
 		}
 
 		if ((IsAdmin == true)||(OtherPersonPresent == true)) {
@@ -1137,7 +1176,7 @@ int SupervisorThread(
 
 
 	}
-	return 0;
+	return 1;
 }
 
 int AudioBufferFromMicThread(
@@ -1152,6 +1191,7 @@ int AudioBufferFromMicThread(
 	atomic<unsigned int> LastAudioIOToggledUpdateFlag = 0;
 	while (*ProgramStartup == 1) {
 		//Wait for startup to finish
+		Sleep(1);
 	}
 	while (*RunProgram == 1) {
 		if (*AudioIOToggledUpdateFlag != LastAudioIOToggledUpdateFlag) {
@@ -1160,16 +1200,19 @@ int AudioBufferFromMicThread(
 				AudioInputBufferToCoreThread.resize(FRAMES_PER_BUFFER);
 			}
 			AudioBufferToCoreUpdateFlag = 1;
-			while (*AudioBufferFromCoreAcknowledgementFlag == 0) {
+			while ((*AudioBufferFromCoreAcknowledgementFlag == 0) && (*RunProgram == 1)) {
 				//Wait for acknowledgement of data transfer
+				Sleep(1);
 			}
 			AudioBufferToCoreUpdateFlag = 0;
-			while (*AudioBufferFromCoreAcknowledgementFlag == 1) {
+			while ((*AudioBufferFromCoreAcknowledgementFlag == 1) && (*RunProgram == 1)) {
 				//Wait for acknowledgement has reset
+				Sleep(1);
 			}
 
 			LastAudioIOToggledUpdateFlag = (unsigned int)*AudioIOToggledUpdateFlag;
 		}
+		Sleep(1);
 	}
 	return 1;
 }
@@ -1191,339 +1234,27 @@ int AudioBufferToSpeakerThread(
 		if ((*AudioIOToggledUpdateFlag) != LastAudioIOToggledUpdateFlag) {
 			AudioOutputBufferToAudioIOThread = *AudioOutputBufferFromCoreThread;
 			AudioBufferToCoreUpdateFlag = 1;
-			while (*AudioBufferFromCoreAcknowledgementFlag == 0) {
+			while ((*AudioBufferFromCoreAcknowledgementFlag == 0) && (*RunProgram == 1)) {
 				//Wait for acknowledgement of data transfer
+				Sleep(1);
 			}
 			AudioBufferToCoreUpdateFlag = 0;
-			while (*AudioBufferFromCoreAcknowledgementFlag == 1) {
+			while ((*AudioBufferFromCoreAcknowledgementFlag == 1) && (*RunProgram == 1)) {
 				//Wait for acknowledgement has reset
+				Sleep(1);
 			}
 			LastAudioIOToggledUpdateFlag = (unsigned int)*AudioIOToggledUpdateFlag;
 		}
+		Sleep(1);
 	}
 	return 1;
 }
 
 
-int OLD_ALICECoreThread(
+int ALICECoreThread_Genetic(
 	atomic<unsigned int> *RunProgram,
 	atomic<unsigned int> *ProgramStartup,
-	unsigned int TrainingMode, //0=Emotinal training, 1=Offline trainer training , 2=Offline training, 3=Online training
-	vector<float> *ScoringVariables,
-	atomic<unsigned int> *AudioBufferFromAudioBufferUpdateFromMicFlag,
-	atomic<unsigned int>& AudioBufferToAudioBufferAcknowledgementFromMicFlag,
-	atomic<unsigned int> *AudioBufferFromAudioBufferUpdateToSpeakerFlag,
-	atomic<unsigned int>& AudioBufferToAudioBufferAcknowledgementToSpeakerFlag,
-	vector<float> *AudioInputBufferFromAudioBufferThread,
-	vector<float>& AudioOutputBufferToAudioBufferThread,
-	vector<float>& EmotinoalOutputsToUI,
-	unsigned int& NumOfIndividualInGeneration,
-	unsigned int& GenerationNum,
-	float &NetworkScore
-) {
-	
-	vector<float> AudioInputBuffer;
-	vector<float> AudioInputSecondaryBuffer;
-	vector<float> TimeDateInput;
-
-	float NetworkScoreBuffer = 0;
-	NetworkScore = 0;
-	vector<float> AudioOutputBuffer;
-	vector<float> EmotinoalOutputs;
-
-	vector<OLD_NeuralNetworkModule> NeuralNetworkGeneration;
-	OLD_NeuralNetworkModule NeuralNetwork;
-	unsigned int NetworkModule = 0;
-	GenerationNum;
-	NumOfIndividualInGeneration;
-
-vector<float> GenerationScoreVector;
-
-AudioInputBuffer.resize(FRAMES_PER_BUFFER);
-if (AudioInputBuffer.size() == 0) {
-	AudioInputBuffer.resize(FRAMES_PER_BUFFER);
-}
-if (AudioOutputBuffer.size() == 0) {
-	AudioOutputBuffer.resize(FRAMES_PER_BUFFER);
-}
-/*
-BufferNodeValues.resize(33);///
-for (unsigned int i = 0; i < 22; i++) {
-	if (i < 11) {
-		LSTMInputNodeIDBuffer.push_back(0);
-	}else {
-		LSTMInputNodeIDBuffer.push_back(i);
-	}
-	LSTMOutputNodeIDBuffer.push_back(i + 11);
-}
-
-//LSTMWeightsListBuffer.resize(22*8);
-for (unsigned int i = 0; i < 22*8; i++) {
-	LSTMWeightsListBuffer.push_back(3.1);///
-}
-
-LSTMPreviousCellStateValueBuffer.resize(22);//ct-1///
-LSTMPreviousOutputValueBuffer.resize(22);	//ht-1///
-LSTMForgetGateValueBuffer.resize(22);		//ft///
-LSTMInputGateValueBuffer.resize(22);		//it///
-LSTMCandidateValueBuffer.resize(22);		//~ct///
-LSTMOutputGateValueBuffer.resize(22);		//ot///
-LSTMCellStateValueBuffer.resize(22);		//ct///
-LSTMOutputValueBuffer.resize(22);			//ht///
-//	NeuronNodeStartBuffer.resize(1);
-//	NeuronNodeEndBuffer.resize(1);
-//	NeuronInputNodeIDsBuffer.resize(1);
-//	NeuronOutputNodeIDsBuffer.resize(1);
-//	NeuronOutputNodeBuffer.resize(1);///
-//	NeuronWeightsBuffer.resize(1);
-	(*ScoringVariables).resize(11);
-	*/
-
-
-TrainingMode = 0;		//0=Emotinal training, 1=Offline training, 2=Online training
-//	float NetworkScoreBuffer;
-//	float NetworkScore;
-std::chrono::steady_clock::time_point TimeStamp;
-std::chrono::steady_clock::time_point OldTimeStamp;
-float CalcTimeDiff_nseconds = 40.0;
-TimeStamp = std::chrono::high_resolution_clock::now();
-OldTimeStamp = TimeStamp;
-while (*ProgramStartup == 1) {
-	//Wait for startup to finish
-}
-NeuralNetworkGeneration.resize(25);
-for (NumOfIndividualInGeneration = 0; NumOfIndividualInGeneration < 25; NumOfIndividualInGeneration++) {
-	OLD_LoadNeuralNetworkModule(
-		NeuralNetworkGeneration[NumOfIndividualInGeneration],
-		&NetworkModule,		//0=Emotinal training module, 1=Core module, 2=Offline training module
-		&GenerationNum,
-		&NumOfIndividualInGeneration
-	);
-}
-NumOfIndividualInGeneration = 0;
-bool InitialRun = true;
-while (*RunProgram == 1) {
-	/*
-	OldTimeStamp = TimeStamp;
-	TimeStamp = std::chrono::high_resolution_clock::now();
-	CalcTimeDiff_nseconds = (float)(1 / std::chrono::duration_cast<std::chrono::nanoseconds>(OldTimeStamp - TimeStamp).count() / 1e9);
-	system("CLS");
-	cout << FPSCalcTimeDiff_nseconds  << endl;
-	*/
-	if (InitialRun == true) {
-		InitialRun = false;
-		//Load current generation
-		NeuralNetwork = NeuralNetworkGeneration[NumOfIndividualInGeneration];
-		//NumOfIndividualInGeneration++;
-		NetworkScoreBuffer = 0;
-		NetworkScore = 0;
-	}
-	TimeStamp = std::chrono::high_resolution_clock::now();
-	//CalcTimeDiff_nseconds = (float)(1 / std::chrono::duration_cast<std::chrono::nanoseconds>(OldTimeStamp - TimeStamp).count() / 1e9);
-	CalcTimeDiff_nseconds = (float)(std::chrono::duration_cast<std::chrono::seconds>(TimeStamp - OldTimeStamp).count());
-	if (CalcTimeDiff_nseconds > TEST_RUNTIME_IN_SECONDS) {
-		OldTimeStamp = TimeStamp;
-
-		//Save score of last individual
-		GenerationScoreVector.push_back(NetworkScore / TEST_RUNTIME_IN_SECONDS); //To make score time indepdant, as usually longer tests will almost always result in much higher scores
-		NumOfIndividualInGeneration++;
-		NetworkScoreBuffer = 0;
-		NetworkScore = 0;
-
-		if (NumOfIndividualInGeneration < 25) {	//Load next indivudal
-			NeuralNetwork = NeuralNetworkGeneration[NumOfIndividualInGeneration];
-		}else {		//If finished with current generation, generate next one
-			//Save scores of last generation
-			std::ostringstream FilePath;
-			if (NetworkModule == 0) {
-				FilePath << "C:/ALICE/Emotinal training module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
-			}
-			else if (NetworkModule == 1) {
-				FilePath << "C:/ALICE/Offline training module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
-			}
-			else {
-				FilePath << "C:/ALICE/Core module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
-			}
-
-
-			SaveVector(
-				&FilePath,
-				&GenerationScoreVector
-			);
-
-			vector<OLD_NeuralNetworkModule> BufferNeuralNetworkNewGeneration;
-			vector<unsigned int> FiveSurviorsList;
-			//Check vector is empty
-			while (BufferNeuralNetworkNewGeneration.size() != 0) {
-				BufferNeuralNetworkNewGeneration.clear();
-			}
-			FiveSurviorsList.resize(5);
-			SelectSurvivors(GenerationScoreVector, FiveSurviorsList);
-			srand(time(0));
-			//Cycle through each survivor
-			for (unsigned int n = 0; n < 5; n++) {
-				//Cycle through mating partners
-				for (unsigned int i = 0; i < 5; i++) {
-					//Copy the network, will be modified as needed later
-					BufferNeuralNetworkNewGeneration.push_back(NeuralNetworkGeneration[FiveSurviorsList[n]]);
-					if (n != i) {						//Check for self-mating
-						const float MinWeight = 0.0;
-						const float MaxWeight = 1.0;
-						float RandomChance;
-						for (unsigned int j = 0; j < BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer.size(); j++) {
-							RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
-							if (RandomChance < 0.5) {//Use the weights from the other survivor
-								BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] = NeuralNetworkGeneration[FiveSurviorsList[i]].LSTMWeightsListBuffer[j];
-							}
-							RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
-							if (RandomChance < 0.1) {//Mutate the weight?
-								BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] *= ((5.0 - -5.0) * (float)rand() / (float)RAND_MAX) + -5.0; //Mutate
-																																								   //Clamp result
-								if (BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] > 10.0f) {
-									BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] = 10.0f;
-								}else if (BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] < -10.0f) {
-									BufferNeuralNetworkNewGeneration[(n * 5) + i].LSTMWeightsListBuffer[j] = -10.0f;
-								}
-							}
-						}
-						for (unsigned int j = 0; j < BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer.size(); j++) {
-							RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
-							if (RandomChance < 0.5) {//Use the weights from the other survivor
-								BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = NeuralNetworkGeneration[FiveSurviorsList[i]].NeuronWeightsBuffer[j];
-							}else if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] < 0.0f) {
-								BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 0.0f;
-							}
-							RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
-							if (RandomChance < 0.1) {//Mutate the weight?
-								BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] *= ((5.0 - -5.0) * (float)rand() / (float)RAND_MAX) + -5.0; //Mutate
-																																								 //Clamp result
-								if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] > 10.0f) {
-									BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 10.0f;
-								}else if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] < 0.0f) {
-									BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 0.0f;
-								}
-							}
-						}
-					}
-
-				}
-			}
-			NeuralNetworkGeneration = BufferNeuralNetworkNewGeneration;
-			GenerationNum++;
-			for (NumOfIndividualInGeneration = 0; NumOfIndividualInGeneration < 25; NumOfIndividualInGeneration++) {
-				OLD_SaveNeuralNetworkModule(
-					&NeuralNetworkGeneration[NumOfIndividualInGeneration],
-					&NetworkModule,		//0=Emotinal training module, 1=Core module, 2=Offline training module
-					&GenerationNum,
-					&NumOfIndividualInGeneration
-				);
-			}
-			NumOfIndividualInGeneration = 0;
-			GenerationScoreVector.clear();
-		}
-		//End of next generation creation
-
-	}
-
-	//	while(AudioInputBuffer.size() > 0){
-		//	AudioInputBuffer.clear();
-	//	}
-
-		time_t	t = time(0);   // get time now
-		struct	tm * now = localtime(&t);
-		while (TimeDateInput.size() != 0) {
-			TimeDateInput.clear();
-		}
-		TimeDateInput.push_back(now->tm_sec);
-		TimeDateInput.push_back(now->tm_min);
-		TimeDateInput.push_back(now->tm_hour);
-		TimeDateInput.push_back(now->tm_mday);
-		TimeDateInput.push_back(now->tm_mon + 1);
-		//TimeDateInput.push_back(now->tm_year + 1900);+
-
-		AudioInputSecondaryBuffer = *AudioInputBufferFromAudioBufferThread;
-		if (AudioInputBuffer.size() == FRAMES_PER_BUFFER) {
-			AudioInputBuffer.resize(AudioInputSecondaryBuffer.size());
-			std::copy(AudioInputSecondaryBuffer.begin(), AudioInputSecondaryBuffer.end(), AudioInputBuffer.begin());
-		}
-		if (AudioInputBuffer.size() != FRAMES_PER_BUFFER) {
-			AudioInputBuffer.resize(FRAMES_PER_BUFFER);
-		}
-		if(NeuralNetwork.NeuronNodeStartBuffer.size() == 1){
-			OLD_RunALICECoreNoStandardNeurons(
-				AudioInputBuffer,
-				TimeDateInput,
-				NeuralNetwork.BufferNodeValues,
-				NeuralNetwork.LSTMInputNodeIDBuffer,
-				NeuralNetwork.LSTMOutputNodeIDBuffer,
-				NeuralNetwork.LSTMWeightsListBuffer,
-				NeuralNetwork.LSTMPreviousCellStateValueBuffer,	//ct-1
-				NeuralNetwork.LSTMPreviousOutputValueBuffer,		//ht-1
-				NeuralNetwork.LSTMForgetGateValueBuffer,			//ft
-				NeuralNetwork.LSTMInputGateValueBuffer,			//it
-				NeuralNetwork.LSTMCandidateValueBuffer,			//~ct
-				NeuralNetwork.LSTMOutputGateValueBuffer,			//ot
-				NeuralNetwork.LSTMCellStateValueBuffer,			//ct
-				NeuralNetwork.LSTMOutputValueBuffer,				//ht
-				(*ScoringVariables),
-				TrainingMode,		//0=Emotinal training, 1=Offline training, 2=Online training
-				NetworkScoreBuffer,
-				AudioOutputBuffer
-			);
-		}else {
-			OLD_RunALICECore(
-				AudioInputBuffer,
-				TimeDateInput,
-				NeuralNetwork.BufferNodeValues,
-				NeuralNetwork.LSTMInputNodeIDBuffer,
-				NeuralNetwork.LSTMOutputNodeIDBuffer,
-				NeuralNetwork.LSTMWeightsListBuffer,
-				NeuralNetwork.LSTMPreviousCellStateValueBuffer,	//ct-1
-				NeuralNetwork.LSTMPreviousOutputValueBuffer,		//ht-1
-				NeuralNetwork.LSTMForgetGateValueBuffer,			//ft
-				NeuralNetwork.LSTMInputGateValueBuffer,			//it
-				NeuralNetwork.LSTMCandidateValueBuffer,			//~ct
-				NeuralNetwork.LSTMOutputGateValueBuffer,			//ot
-				NeuralNetwork.LSTMCellStateValueBuffer,			//ct
-				NeuralNetwork.LSTMOutputValueBuffer,				//ht
-				NeuralNetwork.NeuronNodeStartBuffer,
-				NeuralNetwork.NeuronNodeEndBuffer,
-				NeuralNetwork.NeuronInputNodeIDsBuffer,
-				NeuralNetwork.NeuronOutputNodeIDsBuffer,
-				NeuralNetwork.NeuronOutputNodeBuffer,
-				NeuralNetwork.NeuronWeightsBuffer,
-				(*ScoringVariables),
-				TrainingMode,		//0=Emotinal training, 1=Offline training, 2=Online training
-				NetworkScoreBuffer,
-				AudioOutputBuffer
-			);
-		}
-		NetworkScore += NetworkScoreBuffer;
-		EmotinoalOutputsToUI.resize(11);
-		std::copy(NeuralNetwork.BufferNodeValues.begin() + 22, NeuralNetwork.BufferNodeValues.begin() + 33,EmotinoalOutputsToUI.begin());
-		//EmotinoalOutputsToUI = (BufferNodeValues.begin(), BufferNodeValues.begin() + 11);
-
-
-		while (*AudioBufferFromAudioBufferUpdateToSpeakerFlag == 0) {
-			//Wait for update flag to begin data tranfer
-		}
-		while (AudioOutputBufferToAudioBufferThread.size() > 0) {
-			AudioOutputBufferToAudioBufferThread.clear();
-		}
-		AudioOutputBufferToAudioBufferThread.resize(AudioOutputBuffer.size());
-		std::copy(AudioOutputBuffer.begin(), AudioOutputBuffer.end(), AudioOutputBufferToAudioBufferThread.begin());
-		AudioBufferToAudioBufferAcknowledgementToSpeakerFlag = 1;
-		while (*AudioBufferFromAudioBufferUpdateToSpeakerFlag == 1) {
-			//Wait for update flag to reset
-		}
-		AudioBufferToAudioBufferAcknowledgementToSpeakerFlag = 0;
-	}
-	return 1;
-}
-
-int ALICECoreThread(
-	atomic<unsigned int> *RunProgram,
-	atomic<unsigned int> *ProgramStartup,
+	atomic<unsigned int> *PauseNeuralNetwork,
 	unsigned int TrainingMode, //0=Emotinal training, 1=Offline trainer training , 2=Offline training, 3=Online training
 	vector<float> *ScoringVariables,
 	atomic<unsigned int> *AudioBufferFromAudioBufferUpdateFromMicFlag,
@@ -1586,6 +1317,9 @@ int ALICECoreThread(
 	NumOfIndividualInGeneration = 0;
 	bool InitialRun = true;
 	while (*RunProgram == 1) {
+		while ((*PauseNeuralNetwork == 1) && (*RunProgram == 1)) {
+			//Loop while paused
+		}
 		/*
 		OldTimeStamp = TimeStamp;
 		TimeStamp = std::chrono::high_resolution_clock::now();
@@ -1728,11 +1462,17 @@ int ALICECoreThread(
 		AICore.RunAICore();
 		AICore.UnloadOutputData(AudioOutputBuffer);
 		AICore.UnloadScore(NetworkScoreBuffer);
+		NeuralNetworkCombinedModule = AICore.NeuralNetworkIndividual;
 
 		NetworkScore += NetworkScoreBuffer;
 		EmotinoalOutputsToUI.resize(11);
-		std::copy(NeuralNetworkCombinedModule.BufferNodeValues.begin() + 5, NeuralNetworkCombinedModule.BufferNodeValues.begin() + 16, EmotinoalOutputsToUI.begin());
+
+		//std::copy(NeuralNetworkCombinedModule.BufferNodeValues.begin() + 5, NeuralNetworkCombinedModule.BufferNodeValues.begin() + 16, EmotinoalOutputsToUI.begin());
 		//std::copy(NeuralNetworkCombinedModule.BufferNodeValues.begin() + 22, NeuralNetworkCombinedModule.BufferNodeValues.begin() + 33, EmotinoalOutputsToUI.begin());
+		//(i * 18) + 14
+		for (unsigned int i = 0; i < 11; i++) {
+			EmotinoalOutputsToUI[i] = NeuralNetworkCombinedModule.BufferNodeValues[(i * 18) + 14];
+		}
 
 		while (*AudioBufferFromAudioBufferUpdateToSpeakerFlag == 0) {
 			//Wait for update flag to begin data tranfer
@@ -1751,9 +1491,275 @@ int ALICECoreThread(
 	return 1;
 }
 
+int ALICECoreThread(
+	atomic<unsigned int> *RunProgram,
+	atomic<unsigned int> *ProgramStartup,
+	atomic<unsigned int> *PauseNeuralNetwork,
+	unsigned int TrainingMode, //0=Emotinal training, 1=Offline trainer training , 2=Offline training, 3=Online training
+	vector<float> *ScoringVariables,
+	atomic<unsigned int> *AudioBufferFromAudioBufferUpdateFromMicFlag,
+	atomic<unsigned int>& AudioBufferToAudioBufferAcknowledgementFromMicFlag,
+	atomic<unsigned int> *AudioBufferFromAudioBufferUpdateToSpeakerFlag,
+	atomic<unsigned int>& AudioBufferToAudioBufferAcknowledgementToSpeakerFlag,
+	vector<float> *AudioInputBufferFromAudioBufferThread,
+	vector<float>& AudioOutputBufferToAudioBufferThread,
+	vector<float>& EmotinoalOutputsToUI,
+	unsigned int& NumOfIndividualInGeneration,
+	unsigned int& GenerationNum,
+	float &NetworkScore
+) {
+
+	vector<float> AudioInputBuffer;
+	vector<float> AudioInputSecondaryBuffer;
+	vector<float> TimeDateInput;
+
+	float NetworkScoreBuffer = 0;
+	NetworkScore = 0;
+	vector<float> AudioOutputBuffer;
+	vector<float> EmotinoalOutputs;
+
+	vector<NeuralNetworkModule> NeuralNetworkGeneration;
+	NeuralNetworkModule NeuralNetworkCombinedModule;
+	unsigned int NetworkModule = 0;
+	GenerationNum;
+	NumOfIndividualInGeneration;
+
+	vector<float> GenerationScoreVector;
+
+	AudioInputBuffer.resize(FRAMES_PER_BUFFER);
+	if (AudioInputBuffer.size() == 0) {
+		AudioInputBuffer.resize(FRAMES_PER_BUFFER);
+	}
+	if (AudioOutputBuffer.size() == 0) {
+		AudioOutputBuffer.resize(FRAMES_PER_BUFFER);
+	}
+
+	TrainingMode = 0;		//0=Emotinal training, 1=Offline training, 2=Online training
+							//	float NetworkScoreBuffer;
+							//	float NetworkScore;
+	std::chrono::steady_clock::time_point TimeStamp;
+	std::chrono::steady_clock::time_point OldTimeStamp;
+	float CalcTimeDiff_nseconds = 40.0;
+	TimeStamp = std::chrono::high_resolution_clock::now();
+	OldTimeStamp = TimeStamp;
+	while (*ProgramStartup == 1) {
+		//Wait for startup to finish
+		Sleep(1);
+	}
+	NeuralNetworkGeneration.resize(25);
+	for (NumOfIndividualInGeneration = 0; NumOfIndividualInGeneration < 25; NumOfIndividualInGeneration++) {
+		LoadNeuralNetworkModule(
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			&NetworkModule,		//0=Emotinal training module, 1=Core module, 2=Offline training module
+			&GenerationNum,
+			&NumOfIndividualInGeneration
+		);
+	}
+	NumOfIndividualInGeneration = 0;
+	bool InitialRun = true;
+	while (*RunProgram == 1) {
+		while ((*PauseNeuralNetwork == 1) && (*RunProgram == 1)) {
+			//Loop while paused
+			Sleep(100);
+		}
+
+		if (InitialRun == true) {
+			InitialRun = false;
+			//Load current generation
+			NeuralNetworkCombinedModule = NeuralNetworkGeneration[NumOfIndividualInGeneration];
+			//NumOfIndividualInGeneration++;
+			NetworkScoreBuffer = 0;
+			NetworkScore = 0;
+		}
+		TimeStamp = std::chrono::high_resolution_clock::now();
+		//CalcTimeDiff_nseconds = (float)(1 / std::chrono::duration_cast<std::chrono::nanoseconds>(OldTimeStamp - TimeStamp).count() / 1e9);
+		CalcTimeDiff_nseconds = (float)(std::chrono::duration_cast<std::chrono::seconds>(TimeStamp - OldTimeStamp).count());
+		if (CalcTimeDiff_nseconds > TEST_RUNTIME_IN_SECONDS) {
+			OldTimeStamp = TimeStamp;
+
+			//Save score of last individual
+			GenerationScoreVector.push_back(NetworkScore / TEST_RUNTIME_IN_SECONDS); //To make score time indepdant, as usually longer tests will almost always result in much higher scores
+			NumOfIndividualInGeneration++;
+			NetworkScoreBuffer = 0;
+			NetworkScore = 0;
+
+			if (NumOfIndividualInGeneration < 25) {	//Load next indivudal
+				NeuralNetworkCombinedModule = NeuralNetworkGeneration[NumOfIndividualInGeneration];
+			}
+			else {		//If finished with current generation, generate next one
+						//Save scores of last generation
+				std::ostringstream FilePath;
+				if (NetworkModule == 0) {
+					FilePath << "C:/ALICE/Emotinal training module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
+				}
+				else if (NetworkModule == 1) {
+					FilePath << "C:/ALICE/Offline training module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
+				}
+				else {
+					FilePath << "C:/ALICE/Core module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
+				}
+
+
+				SaveVector(
+					&FilePath,
+					&GenerationScoreVector
+				);
+
+				vector<NeuralNetworkModule> BufferNeuralNetworkNewGeneration;
+				vector<unsigned int> FiveSurviorsList;
+				//Check vector is empty
+				while (BufferNeuralNetworkNewGeneration.size() != 0) {
+					BufferNeuralNetworkNewGeneration.clear();
+				}
+				FiveSurviorsList.resize(5);
+				SelectSurvivors(GenerationScoreVector, FiveSurviorsList);
+				srand(time(0));
+				//Cycle through each survivor
+				for (unsigned int n = 0; n < 5; n++) {
+					//Cycle through mating partners
+					for (unsigned int i = 0; i < 5; i++) {
+						//Copy the network, will be modified as needed later
+						BufferNeuralNetworkNewGeneration.push_back(NeuralNetworkGeneration[FiveSurviorsList[n]]);
+						if (n != i) {						//Check for self-mating
+							const float MinWeightChange = -5.0;
+							const float MaxWeightChange = 5.0;
+							const float RandomMinValue = 0.0;
+							const float RandomMaxValue = 1.0;
+							float RandomChance;
+							for (unsigned int j = 0; j < BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer.size(); j++) {
+								RandomChance = ((RandomMaxValue - RandomMinValue) * (float)rand() / (float)RAND_MAX) + RandomMinValue;
+								if (RandomChance < 0.5) {//Use the weights from the other survivor
+									BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = NeuralNetworkGeneration[FiveSurviorsList[i]].NeuronWeightsBuffer[j];
+								}//else if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] < 0.0f) {
+								//	BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 0.0f;
+								//}
+								RandomChance = ((RandomMaxValue - RandomMinValue) * (float)rand() / (float)RAND_MAX) + RandomMinValue;
+								if (RandomChance < 0.1) {//Mutate the weight?
+									BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = ((MaxWeightChange - MinWeightChange) * (float)rand() / (float)RAND_MAX) + MinWeightChange; //Mutate
+																																									 //Clamp result
+									if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] > 10.0f) {
+										BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 10.0f;
+									}else if (BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] < 0.0f) {
+										BufferNeuralNetworkNewGeneration[(n * 5) + i].NeuronWeightsBuffer[j] = 0.0f;
+									}
+								}
+							}
+						}
+
+					}
+				}
+				NeuralNetworkGeneration = BufferNeuralNetworkNewGeneration;
+				GenerationNum++;
+				for (NumOfIndividualInGeneration = 0; NumOfIndividualInGeneration < 25; NumOfIndividualInGeneration++) {
+					SaveNeuralNetworkModule(
+						&NeuralNetworkGeneration[NumOfIndividualInGeneration],
+						&NetworkModule,		//0=Emotinal training module, 1=Core module, 2=Offline training module
+						&GenerationNum,
+						&NumOfIndividualInGeneration
+					);
+				}
+				NumOfIndividualInGeneration = 0;
+				GenerationScoreVector.clear();
+			}
+			//End of next generation creation
+
+		}
+
+		//	while(AudioInputBuffer.size() > 0){
+		//	AudioInputBuffer.clear();
+		//	}
+
+		time_t	t = time(0);   // get time now
+		struct	tm * now = localtime(&t);
+		while (TimeDateInput.size() != 0) {
+			TimeDateInput.clear();
+		}
+		TimeDateInput.push_back(now->tm_sec);
+		TimeDateInput.push_back(now->tm_min);
+		TimeDateInput.push_back(now->tm_hour);
+		TimeDateInput.push_back(now->tm_mday);
+		TimeDateInput.push_back(now->tm_mon + 1);
+		//TimeDateInput.push_back(now->tm_year + 1900);+
+
+		
+		AudioBufferToAudioBufferAcknowledgementFromMicFlag = 0;
+		while (AudioBufferFromAudioBufferUpdateFromMicFlag == 0) {
+			//Wait for acknowledgement of data transfer
+			Sleep(1);
+		}
+		AudioBufferToAudioBufferAcknowledgementFromMicFlag = 1;
+		//Confirmed data transfer
+
+		AudioInputSecondaryBuffer = *AudioInputBufferFromAudioBufferThread;
+		if (AudioInputBuffer.size() == FRAMES_PER_BUFFER) {
+			AudioInputBuffer.resize(AudioInputSecondaryBuffer.size());
+			std::copy(AudioInputSecondaryBuffer.begin(), AudioInputSecondaryBuffer.end(), AudioInputBuffer.begin());
+		}
+		if (AudioInputBuffer.size() != FRAMES_PER_BUFFER) {
+			AudioInputBuffer.resize(FRAMES_PER_BUFFER);
+		}
+
+		vector<float> InputData;
+		InputData.resize(FRAMES_PER_BUFFER + 5);
+		std::copy(AudioInputSecondaryBuffer.begin(), AudioInputSecondaryBuffer.end(), InputData.begin());
+		std::copy(TimeDateInput.begin(), TimeDateInput.end(), InputData.end() - 5);
+		NeuralNetwork AICore;
+		AICore.LoadInputData(InputData);
+		AICore.OutputData.resize(1);
+		AICore.LoadScoringVariables((*ScoringVariables));
+		AICore.LoadNeuralNetworkModule(NeuralNetworkCombinedModule);
+		AICore.RunAICore();
+		AICore.UnloadOutputData(AudioOutputBuffer);
+		AICore.UnloadScore(NetworkScoreBuffer);
+		NeuralNetworkCombinedModule = AICore.NeuralNetworkIndividual;
+		NetworkScore += NetworkScoreBuffer;
+		EmotinoalOutputsToUI.resize(11);
+
+		for (unsigned int i = 0; i < 11; i++) {
+			//EmotinoalOutputsToUI[i] = NeuralNetworkCombinedModule.BufferNodeValues[(i * 18) + 14];
+			EmotinoalOutputsToUI[i] = NeuralNetworkCombinedModule.BufferNodeValues[(i * 18) + 23 + 21];
+		}
+
+		while (*AudioBufferFromAudioBufferUpdateToSpeakerFlag == 0) {
+			//Wait for update flag to begin data tranfer
+			Sleep(1);
+		}
+		while (AudioOutputBufferToAudioBufferThread.size() > 0) {
+			AudioOutputBufferToAudioBufferThread.clear();
+		}
+		AudioOutputBufferToAudioBufferThread.resize(AudioOutputBuffer.size());
+		std::copy(AudioOutputBuffer.begin(), AudioOutputBuffer.end(), AudioOutputBufferToAudioBufferThread.begin());
+		AudioBufferToAudioBufferAcknowledgementToSpeakerFlag = 1;
+		while (*AudioBufferFromAudioBufferUpdateToSpeakerFlag == 1) {
+			//Wait for update flag to reset
+			Sleep(1);
+		}
+		AudioBufferToAudioBufferAcknowledgementToSpeakerFlag = 0;
+	}
+	return 1;
+}
+
+void HideConsolecursor()
+{
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO info;
+	info.dwSize = 100;
+	info.bVisible = FALSE;
+	SetConsoleCursorInfo(consoleHandle, &info);
+}
+void ShowConsolecursor()
+{
+	HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_CURSOR_INFO info;
+	info.dwSize = 100;
+	info.bVisible = TRUE;
+	SetConsoleCursorInfo(consoleHandle, &info);
+}
+
 int UserInterfaceOutputsThread(
 	atomic<unsigned int> *RunProgram,
 	atomic<unsigned int> *ProgramStartup,
+	atomic<unsigned int> *PauseNeuralNetwork,
 	vector<float> *EmotinoalOutputsToUI,
 	unsigned int *NumOfIndividualInGeneration,
 	unsigned int *GenerationNum,
@@ -1763,38 +1769,118 @@ int UserInterfaceOutputsThread(
 	vector<float> EmotinoalOutputs;
 	unsigned int LocalNumOfIndividualInGeneration;
 	unsigned int LocalGenerationNum;
-	unsigned int LocalNetworkScore;
+	vector<float> LocalScoringVariables;
+	float LocalNetworkScore;// unsigned int LocalNetworkScore;
 	vector<float> LocalEmotinoalOutputs;
-	
 
+	const vector<string> VariableOutputName = { "Ecstasy: ","Admiration: ","Terror: ","Amazement: ","Grief: ", "Loathing: ","Rage: ","Vigilance: ", "ID: ","Busy: ","Present: ","Generation: ","Individual: ","Current score: " };
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	COORD position = { 0, 0 };
+	system("CLS");
+	HideConsolecursor();
+	cout.precision(3);
+	cout << fixed << setfill(' ');
+
+	for (unsigned int i = 0; i < 11; i++) {
+		cout << VariableOutputName[i] << setw(20 - (VariableOutputName[i]).size()) << (float)0.0 << setw(10) << (float)0.0 << endl;
+	}
+	cout << VariableOutputName[11] << setw(16 - (VariableOutputName[11]).size()) << (unsigned int)0 << endl;
+	cout << VariableOutputName[12] << setw(16 - (VariableOutputName[12]).size()) << (unsigned int)0 << endl;
+	cout << VariableOutputName[13] << setw(20 - (VariableOutputName[13]).size()) << (float)0.0 << endl;
+
+	while (*ProgramStartup == 1) {
+		//Wait for startup to finish
+		Sleep(1);
+	}
+	while (*RunProgram == 1) {
+		while ((*PauseNeuralNetwork == 1)&&(*RunProgram == 1)) {
+			//Loop while paused
+			position = { 0, 14 };
+			SetConsoleCursorPosition(hStdout, position);
+			cout << "Paused - press P to unpause";
+			Sleep(100);
+		}
+		if (*PauseNeuralNetwork == 0){
+			position = { 0, 14 };
+			SetConsoleCursorPosition(hStdout, position);
+			cout << "                           ";
+		}
+
+		LocalNumOfIndividualInGeneration = *NumOfIndividualInGeneration;
+		LocalNetworkScore = *NetworkScore;
+		LocalGenerationNum = *GenerationNum;
+		LocalScoringVariables = *ScoringVariables;
+		EmotinoalOutputs.resize((*EmotinoalOutputsToUI).size());
+		LocalEmotinoalOutputs.resize(LocalScoringVariables.size());
+		std::copy((*EmotinoalOutputsToUI).begin(),(*EmotinoalOutputsToUI).end(), EmotinoalOutputs.begin());
+		//std::copy((*ScoringVariables).begin(), (*ScoringVariables).end(), LocalEmotinoalOutputs.begin());
+		//for (unsigned int i = 0; i < (*ScoringVariables).size(); i++) {
+
+		if (LocalScoringVariables.size() != 0) {
+			for (unsigned int i = 0; i < LocalScoringVariables[1]; i++) {//Same issue as below.
+				LocalEmotinoalOutputs[i] = LocalScoringVariables[3 + (i * 2)];//Error occured here!!! LocalEmotinoalOutputs is size 0, when it should be at 3. ScoringVariables must have resized to 0 momentarily. -fixed, maybe
+			}
+		}
+
+
+		if ((EmotinoalOutputs.size() == 11) && (LocalEmotinoalOutputs.size() != 0)){
+					
+			for (short i = 0; i < 11; i++) {
+				position = { 15, i };
+				SetConsoleCursorPosition(hStdout, position);
+				if (EmotinoalOutputs[i] >= 0) {
+					cout << " ";//Placed for positive values where '-' would be used for negative values
+				}
+				cout << EmotinoalOutputs[i];
+				position = { 25, i };
+				SetConsoleCursorPosition(hStdout, position);
+
+				if (LocalEmotinoalOutputs[i] >= 0) {
+					cout << " ";//Placed for positive values where '-' would be used for negative values
+				}
+				cout << LocalEmotinoalOutputs[i];
+				
+			}
+			position = { 15, 11 };
+			SetConsoleCursorPosition(hStdout, position);
+			cout << LocalGenerationNum << "            ";
+			position = { 15, 12 };
+			SetConsoleCursorPosition(hStdout, position);
+			cout << LocalNumOfIndividualInGeneration << "            ";
+			position = { 15, 13 };
+			SetConsoleCursorPosition(hStdout, position);
+			cout << LocalNetworkScore << "            ";
+		}
+		Sleep(50);
+		//if (GetAsyncKeyState(50) == 1) {
+		//if (getch() == 50) {
+
+	}
+	return 1;
+}
+
+int NeuralNetworkRunTimeUserInputThread(
+	atomic<unsigned int> *RunProgram,
+	atomic<unsigned int> *ProgramStartup,
+	atomic<unsigned int> *PauseNeuralNetwork
+) {
+	int UserInputFromKeyboard = 0;
 	while (*ProgramStartup == 1) {
 		//Wait for startup to finish
 	}
 	while (*RunProgram == 1) {
-		LocalNumOfIndividualInGeneration = *NumOfIndividualInGeneration;
-		LocalNetworkScore = *NetworkScore;
-		LocalGenerationNum = *GenerationNum;
-		EmotinoalOutputs.resize((*EmotinoalOutputsToUI).size());
-		LocalEmotinoalOutputs.resize((*ScoringVariables).size());
-		std::copy((*EmotinoalOutputsToUI).begin(),(*EmotinoalOutputsToUI).end(), EmotinoalOutputs.begin());
-		std::copy((*ScoringVariables).begin(), (*ScoringVariables).end(), LocalEmotinoalOutputs.begin());
-		if (EmotinoalOutputs.size() == 11) {
-			system("CLS");
-			cout.precision(3);
-			cout << "Ecstasy: " << EmotinoalOutputs[0] << "		" << LocalEmotinoalOutputs[0] << endl;
-			cout << "Admiration: " << EmotinoalOutputs[1] << "		" << LocalEmotinoalOutputs[1] << endl;
-			cout << "Terror: " << EmotinoalOutputs[2] << "		" << LocalEmotinoalOutputs[2] << endl;
-			cout << "Amazement: " << EmotinoalOutputs[3] << "		" << LocalEmotinoalOutputs[3] << endl;
-			cout << "Grief: " << EmotinoalOutputs[4] << "		" << LocalEmotinoalOutputs[4] << endl;
-			cout << "Loathing: " << EmotinoalOutputs[5] << "		" << LocalEmotinoalOutputs[5] << endl;
-			cout << "Rage: " << EmotinoalOutputs[6] << "		" << LocalEmotinoalOutputs[6] << endl;
-			cout << "Vigilance: " << EmotinoalOutputs[7] << "		" << LocalEmotinoalOutputs[7] << endl;
-			cout << "ID: " << EmotinoalOutputs[8] << "		" << LocalEmotinoalOutputs[8] << endl;
-			cout << "Busy: " << EmotinoalOutputs[9] << "		" << LocalEmotinoalOutputs[9] << endl;
-			cout << "Present: " << EmotinoalOutputs[10] << "		" << LocalEmotinoalOutputs[10] << endl;
-			cout << "Generation: " << LocalGenerationNum << endl;
-			cout << "Individual: " << LocalNumOfIndividualInGeneration << endl;
-			cout << "Current score: " << LocalNetworkScore << endl;
+		UserInputFromKeyboard = 0;
+		switch (UserInputFromKeyboard = getch()) {
+
+		case 0x1B://esc
+			*RunProgram = 0;
+			break;
+		case 0x50://P
+		case 0x70://p
+			*PauseNeuralNetwork ^= 1;
+			break;
+		default:
+			break;
 		}
 	}
 	return 1;
@@ -1803,6 +1889,7 @@ int UserInterfaceOutputsThread(
 void main() {
 	atomic<unsigned int> RunProgram = 0;
 	atomic<unsigned int> ProgramStartup = 1;
+	atomic<unsigned int> PauseNeuralNetwork = 0;
 
 	unsigned int NumOfIndividualInGeneration = 0;
 	unsigned int GenerationNum = 0;//0
@@ -1826,8 +1913,29 @@ void main() {
 
 	unsigned int TrainingMode = 0;
 
+	string UserInputString = "";
+	while (1) {
+		cout << "Please input starting generation number:";
+		getline(cin, UserInputString);
+		stringstream UserInputStringStream(UserInputString);
+		if ((UserInputStringStream >> GenerationNum) && (GenerationNum >= 0)) {// if a number and not negative
+			break;
+		}
+		cout << "Invalid number, please try again" << endl;
+	}
+
+
+	AudioBufferFromCoreAcknowledgementToSpeakerFlag = 0; //TMP
+
 	AudioInputBufferToSpeaker.resize(FRAMES_PER_BUFFER);
 	//if (TrainingMode != 0) {
+	auto NeuralNetworkRunTimeUserInputThreadID = async(
+		NeuralNetworkRunTimeUserInputThread,
+		&RunProgram,
+		&ProgramStartup,
+		&PauseNeuralNetwork
+	);
+
 	auto AudioIOThreadID = async(
 		AudioIOThread,
 		&RunProgram,
@@ -1867,6 +1975,7 @@ void main() {
 		ALICECoreThread,
 		&RunProgram,
 		&ProgramStartup,
+		&PauseNeuralNetwork,
 		TrainingMode,
 		&ScoringVariables,
 		&AudioBufferToCoreUpdateFromMicFlag,//
@@ -1885,6 +1994,7 @@ void main() {
 		SupervisorThread,
 		&RunProgram,
 		&ProgramStartup,
+		&PauseNeuralNetwork,
 		TrainingMode,
 		ref(AudioIOToggledUpdateFromMicFlag),
 		ref(AudioInputBufferFromMic),
@@ -1895,6 +2005,7 @@ void main() {
 		UserInterfaceOutputsThread,
 		&RunProgram,
 		&ProgramStartup,
+		&PauseNeuralNetwork,
 		&EmotinoalOutputsToUI,
 		&NumOfIndividualInGeneration,
 		&GenerationNum,
@@ -1907,84 +2018,122 @@ void main() {
 	ProgramStartup = 0;
 	while (RunProgram == 1) {
 		//Run program
+		Sleep(100);
 	}
 }
 
-void OLD_main6() {
-	const float MinWeight = -10.0;
-	const float MaxWeight = 10.0;
-	float RandomChance;
-
-	unsigned int NetworkModule = 0;
-	unsigned int GenerationNum = 0;
-	vector<OLD_NeuralNetworkModule> NeuralNetworkGeneration;
-	NeuralNetworkGeneration.resize(25);
-	for (unsigned int NumOfIndividualInGeneration = 0; NumOfIndividualInGeneration < 25; NumOfIndividualInGeneration++) {
-		
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].BufferNodeValues.resize(33);
-		for (unsigned int i = 0; i < 22; i++) {
-			if (i < 11) {
-				NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMInputNodeIDBuffer.push_back(0);
-			}else {
-				NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMInputNodeIDBuffer.push_back(i);
-			}
-			NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMOutputNodeIDBuffer.push_back(i + 11);
-		}
-		for (unsigned int i = 0; i < 22 * 8; i++) {
-			RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
-			NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMWeightsListBuffer.push_back(RandomChance);
-		}
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMPreviousCellStateValueBuffer.resize(22);//ct-1///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMPreviousOutputValueBuffer.resize(22);	//ht-1///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMForgetGateValueBuffer.resize(22);		//ft///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMInputGateValueBuffer.resize(22);		//it///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMCandidateValueBuffer.resize(22);		//~ct///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMOutputGateValueBuffer.resize(22);		//ot///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMCellStateValueBuffer.resize(22);		//ct///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].LSTMOutputValueBuffer.resize(22);			//ht///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronNodeStartBuffer.resize(1);
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronNodeEndBuffer.resize(1);
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronInputNodeIDsBuffer.resize(1);
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronOutputNodeIDsBuffer.resize(1);
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronOutputNodeBuffer.resize(1);///
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].NeuronWeightsBuffer.resize(1);
-		//LSTMWeightsListBuffer
-		OLD_SaveNeuralNetworkModule(
-			&NeuralNetworkGeneration[NumOfIndividualInGeneration],
-			&NetworkModule,		//0=Emotinal training module, 1=Core module, 2=Offline training module
-			&GenerationNum,
-			&NumOfIndividualInGeneration
-		);
-	}
-}
-
-void CreateLSTMUnit(
+void CreateNeuralNode(
 	NeuralNetworkModule &NeuralNetworkIndividual,
-	unsigned int InputNodeID
+	unsigned int TypeOfNode,
+	vector<unsigned int> InputNodeIDs
 ) {
 	const float MinWeight = -10.0;
 	const float MaxWeight = 10.0;
 	float RandomChance;
 	unsigned int StartID = NeuralNetworkIndividual.BufferNodeValues.size();
+	unsigned int NumberOfInputs = InputNodeIDs.size();
+	if (NumberOfInputs == 0) {
+		return;
+	}
 
-	//NeuralNetworkIndividual.BufferNodeValues.resize(9 + NeuralNetworkIndividual.BufferNodeValues.size());
+	NeuralNetworkIndividual.BufferNodeValues.resize(1 + NeuralNetworkIndividual.BufferNodeValues.size());
+	//TypeOfNode
+	NeuralNetworkIndividual.TypeOfNode.push_back(TypeOfNode);
+
+	//NeuronNodeStartBuffer
+	unsigned int WeightLength = 0;
+	unsigned int CurrentWeightLength = 0;
+	unsigned int NeuronNodeStartBufferSize = NeuralNetworkIndividual.NeuronNodeStartBuffer.size();
+	if (NeuronNodeStartBufferSize > 0) {
+		CurrentWeightLength = NeuralNetworkIndividual.NeuronNodeStartBuffer[NeuronNodeStartBufferSize - 1] + NeuralNetworkIndividual.NeuronNodeLength[NeuronNodeStartBufferSize - 1];//InputNodeID;
+		//NeuralNetworkIndividual.NeuronNodeStartBuffer.push_back(NeuralNetworkIndividual.NeuronNodeStartBuffer[NeuronNodeStartBufferSize - 1]);//InputNodeID;
+	}
+	NeuralNetworkIndividual.NeuronNodeStartBuffer.push_back(CurrentWeightLength);//InputNodeID;
+
+	//NeuronNodeLength
+	NeuralNetworkIndividual.NeuronNodeLength.push_back(NumberOfInputs);
+
+
+	//NeuronInputNodeIDsBuffer
+	for (unsigned int i = 0; i < NumberOfInputs; i++) {
+		NeuralNetworkIndividual.NeuronInputNodeIDsBuffer.push_back(InputNodeIDs[i]);
+	}
+
+	//NeuronOutputNodeBuffer
+	//NeuronOutputNodeIDsBuffer
+	NeuralNetworkIndividual.NeuronOutputNodeIDsBuffer.push_back(StartID);
+
+	//NeuronOutputNodeBuffer
+	NeuralNetworkIndividual.NeuronOutputNodeBuffer.resize(NeuralNetworkIndividual.NeuronOutputNodeIDsBuffer.size());
+	//NeuralNetworkIndividual.NeuronOutputNodeBuffer.resize(9 + NeuralNetworkIndividual.NeuronOutputNodeIDsBuffer.size());
+
+	//NeuronWeightsBuffer / NeuronBiasBuffer
+	for (unsigned int i = 0; i < NumberOfInputs; i++) {
+		RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
+		NeuralNetworkIndividual.NeuronWeightsBuffer.push_back(RandomChance);
+
+		RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
+		NeuralNetworkIndividual.NeuronBiasBuffer.push_back(RandomChance);
+	}
+}
+
+/*
+unsigned int InputNodeID; Node data is pulled from
+Uses 9 nodes
+*/
+void CreateLSTMUnit(
+	NeuralNetworkModule &NeuralNetworkIndividual,
+	unsigned int InputNodeID
+) {
+	unsigned int StartID = NeuralNetworkIndividual.BufferNodeValues.size();
+	const vector<unsigned int> NodeTypeVector = { 1,1,2,1,3,3,0,2,3 };
+	const vector<vector<unsigned int>> InputNodeIDs = { 
+		{ InputNodeID, StartID + 8 },
+		{ InputNodeID, StartID + 8 },
+		{ InputNodeID, StartID + 8 },
+		{ InputNodeID, StartID + 8 },
+		{ StartID + 0, StartID + 6 },
+		{ StartID + 1, StartID + 2 },
+		{ StartID + 4, StartID + 5 },
+		{  StartID + 6 },
+		{ StartID + 3, StartID + 7 }
+	};
+	for (unsigned int i = 0; i < 9; i++) {
+		CreateNeuralNode(
+			NeuralNetworkIndividual,
+			(unsigned int)NodeTypeVector[i],
+			vector<unsigned int>{ InputNodeIDs[i] }
+		);
+	}
+	/*
+
+
+	const float MinWeight = -10.0;
+	const float MaxWeight = 10.0;
+	float RandomChance;
+	unsigned int StartID = NeuralNetworkIndividual.BufferNodeValues.size();
+
 	NeuralNetworkIndividual.BufferNodeValues.resize(9 + NeuralNetworkIndividual.BufferNodeValues.size());
 	//TypeOfNode
-	NeuralNetworkIndividual.TypeOfNode.push_back(1);
-	NeuralNetworkIndividual.TypeOfNode.push_back(1);
-	NeuralNetworkIndividual.TypeOfNode.push_back(2);
-	NeuralNetworkIndividual.TypeOfNode.push_back(1);
-	NeuralNetworkIndividual.TypeOfNode.push_back(3);
-	NeuralNetworkIndividual.TypeOfNode.push_back(3);
-	NeuralNetworkIndividual.TypeOfNode.push_back(0);
-	NeuralNetworkIndividual.TypeOfNode.push_back(3);
-	NeuralNetworkIndividual.TypeOfNode.push_back(2);
+	NeuralNetworkIndividual.TypeOfNode.push_back(1);//Sigmoid
+	NeuralNetworkIndividual.TypeOfNode.push_back(1);//Sigmoid
+	NeuralNetworkIndividual.TypeOfNode.push_back(2);//Tanh
+	NeuralNetworkIndividual.TypeOfNode.push_back(1);//Sigmoid
+	NeuralNetworkIndividual.TypeOfNode.push_back(3);//Multiply
+	NeuralNetworkIndividual.TypeOfNode.push_back(3);//Multiply
+	NeuralNetworkIndividual.TypeOfNode.push_back(0);//Sum
+	NeuralNetworkIndividual.TypeOfNode.push_back(2);//Tanh
+	NeuralNetworkIndividual.TypeOfNode.push_back(3);//Multiply
 
 	//NeuronNodeStartBuffer / NeuronNodeLength
 	unsigned int WeightLength = 0;
-	unsigned int CurrentWeightLength = 0;
+	unsigned int CurrentWeightLength = 0;//InputNodeID;
+	unsigned int NeuronNodeStartBufferSize = NeuralNetworkIndividual.NeuronNodeStartBuffer.size();
+	if (NeuronNodeStartBufferSize > 0) {
+		CurrentWeightLength = NeuralNetworkIndividual.NeuronNodeStartBuffer[NeuronNodeStartBufferSize - 1];
+	} 
 
-	for (unsigned int i = 0; i < 7; i++) {
+	for (unsigned int i = 0; i < 8; i++) {
 		WeightLength = 2;
 		NeuralNetworkIndividual.NeuronNodeStartBuffer.push_back(CurrentWeightLength);
 		NeuralNetworkIndividual.NeuronNodeLength.push_back(WeightLength);
@@ -2037,9 +2186,11 @@ void CreateLSTMUnit(
 		RandomChance = ((MaxWeight - MinWeight) * (float)rand() / (float)RAND_MAX) + MinWeight;
 		NeuralNetworkIndividual.NeuronBiasBuffer.push_back(RandomChance);
 	}
+	*/
 }
 
-void GenerateInitialGeneration() {
+//GenerateInitialGeneration
+void main6() {
 	const float MinWeight = -10.0;
 	const float MaxWeight = 10.0;
 	float RandomChance;
@@ -2098,15 +2249,77 @@ void GenerateInitialGeneration() {
 		[2 + (n * 2)]NodeIDsToScore
 		[3 + (n * 2)]ScoringVariables
 		*/
-		NeuralNetworkGeneration[NumOfIndividualInGeneration].BufferNodeValues.resize(6);
-		CreateLSTMUnit(
+		NeuralNetworkGeneration[NumOfIndividualInGeneration].BufferNodeValues.resize(6);//Network input nodes
+		
+		CreateNeuralNode(//6
 			NeuralNetworkGeneration[NumOfIndividualInGeneration],
-			0
+			(unsigned int) 3,
+			vector<unsigned int>{ 7 }
 		);
-		CreateLSTMUnit(
+		CreateNeuralNode(//7
 			NeuralNetworkGeneration[NumOfIndividualInGeneration],
-			15
+			(unsigned int) 3,
+			vector<unsigned int>{ 6 }
 		);
+		CreateNeuralNode(//8
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int) 1,
+			vector<unsigned int>{ 1,2,3,4,5,6 }
+		);
+		CreateNeuralNode(//9
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)1,
+			vector<unsigned int>{ 10 }
+		);
+		CreateNeuralNode(//10
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)1,
+			vector<unsigned int>{ 0,9,11 }
+		);
+		CreateNeuralNode(//11
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)1,
+			vector<unsigned int>{ 8,10,12 }
+		);
+		CreateNeuralNode(//12
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)1,
+			vector<unsigned int>{ 11 }
+		);
+		CreateNeuralNode(//13
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)1,
+			vector<unsigned int>{ 9,10,11,12 }
+		);
+		CreateNeuralNode(//14
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)4,
+			vector<unsigned int>{ 9,10,11,12 }
+		);
+		CreateNeuralNode(//15
+			NeuralNetworkGeneration[NumOfIndividualInGeneration],
+			(unsigned int)5,
+			vector<unsigned int>{ 9, 10, 11, 12 }
+		);
+		for (unsigned int i = 0; i < 11; i++) {
+			CreateNeuralNode(//16-26
+				NeuralNetworkGeneration[NumOfIndividualInGeneration],
+				(unsigned int)1,
+				vector<unsigned int>{ 13,14,15 }
+			);
+		}
+
+		for (unsigned int i = 0; i < 11; i++) {
+			CreateLSTMUnit(
+				NeuralNetworkGeneration[NumOfIndividualInGeneration],
+				16 + i//0
+			);
+			CreateLSTMUnit(
+				NeuralNetworkGeneration[NumOfIndividualInGeneration],
+				(i * 18) + 35//5+9+21
+			);
+		}
+
 
 		SaveNeuralNetworkModule(
 			&NeuralNetworkGeneration[NumOfIndividualInGeneration],
@@ -2124,7 +2337,7 @@ void LoadScoreToConsole() {
 	float TotalGenerationScore = 0;
 	float AverageGenerationScore = 0;
 	GenerationScoreVector.resize(25);
-	for (GenerationNum = 0; GenerationNum <= 40; GenerationNum++) {
+	for (GenerationNum = 0; GenerationNum <= 17; GenerationNum++) {
 		std::ostringstream FilePath;
 		if (NetworkModule == 0) {
 			FilePath << "C:/ALICE/Emotinal training module/Gen-" << GenerationNum << "_Scores-" << ".DATA";
@@ -2152,5 +2365,7 @@ void LoadScoreToConsole() {
 }
 
 
-
+void main2() {
+	LoadScoreToConsole();
+}
 
